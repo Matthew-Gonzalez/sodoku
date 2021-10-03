@@ -77,6 +77,14 @@ public class Cell {
     }
 
     /**
+     * Get the first possible value of the cell.
+     * @return the first possible value.
+     */
+    public int GetFirstPossibleValue(){
+        return this.possibleValues.get(0);
+    }
+
+    /**
      * Get a list with the current possible values for the cell.
      * @return a list with the possible values.
      */
