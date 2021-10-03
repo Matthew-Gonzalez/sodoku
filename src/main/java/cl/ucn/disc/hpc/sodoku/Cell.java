@@ -15,6 +15,26 @@ public class Cell {
     private boolean isLock;
 
     /**
+     * The constructor of a cell
+     */
+    public Cell(){
+        this.isByDefault = false;
+        this.isLock = false;
+    }
+
+    /**
+     * If this is a default cell use this constructor
+     * @param value the default value of the cell.
+     */
+    public Cell(int value){
+        this.isByDefault = true;
+        this.isLock = true;
+
+        // Set the default value
+        AddPossibleValue(value);
+    }
+
+    /**
      * Add a possible value.
      * @param value the value.
      */
