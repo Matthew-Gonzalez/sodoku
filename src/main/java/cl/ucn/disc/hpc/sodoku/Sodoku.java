@@ -12,6 +12,8 @@ import java.util.List;
 public class Sodoku {
     // A matrix with the cells of the sodoku
     private Cell[][] cells;
+    // A matrix with the boxes of the sodoku
+    private Box[][] boxes;
 
     /**
      * The constructor of the sodoku.
@@ -62,9 +64,57 @@ public class Sodoku {
                 cells[i][j] = cell;
             }
         }
+
+        // Finally, is necessary to create the boxes
+        int boxesLength = (int)Math.sqrt(cells.length);
+        boxes = new Box[boxesLength][boxesLength];
+        int minX = 0, maxX = boxesLength - 1, minY = 0, maxY = boxesLength - 1;
+        for (int i = 0; i < boxesLength; i++){
+            for (int j = 0; j < boxesLength; j++){
+                // Determines if the box is going to evaluate row, columns or neither
+                Box.ToEvaluate toEvaluate = Box.ToEvaluate.None;
+                if (i == 0){
+                    if (j > 0){
+                        toEvaluate = Box.ToEvaluate.Column;
+                    }
+                    else {
+                        toEvaluate = Box.ToEvaluate.Row;
+                    }
+                } else if (i == 1 && j == 0){
+                    toEvaluate = Box.ToEvaluate.Column;
+                }
+                else {
+                    if (j == 1){
+                        toEvaluate = Box.ToEvaluate.Row;
+                    }else if (j == 0){
+                        toEvaluate = Box.ToEvaluate.Column;
+                    }
+                }
+                // Create the box
+                Box box = new Box(cells, toEvaluate,minX, maxX, minY, maxY);
+                boxes[i][j] = box;
+
+                // Determines the range of the next box in the x-axis
+                if (maxX == cells.length - 1){
+                    minX = 0;
+                    maxX = boxesLength - 1;
+                }else{
+                    minX = maxX + 1;
+                    maxX += boxesLength;
+                }
+            }
+            // Determines the range of the next box en int y-axis
+            minY = maxY + 1;
+            maxY += boxesLength;
+        }
+
     }
 
     public Cell[][] GetCells(){
         return this.cells;
+    }
+
+    public Box[][] GetBoxes(){
+        return this.boxes;
     }
 }
