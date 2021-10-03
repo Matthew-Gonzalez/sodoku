@@ -11,9 +11,9 @@ import java.util.List;
 @Slf4j
 public class Sodoku {
     // A matrix with the cells of the sodoku
-    public Cell[][] cells;
+    private final Cell[][] cells;
     // A matrix with the boxes of the sodoku
-    private Box[][] boxes;
+    private final Box[][] boxes;
 
     /**
      * The constructor of the sodoku.
@@ -23,13 +23,31 @@ public class Sodoku {
         // Initialize the cells matrix
         this.cells = new Cell[grid.length][grid.length];
 
-        // First we need the default values of each row and column
-        List<List<Integer>> rowDefaultValues = new ArrayList<>(cells.length);
-        List<List<Integer>> columnDefaultValues = new ArrayList<>(cells.length);
+        // Initialize the boxes matrix
+        int boxesLength = (int)Math.sqrt(cells.length);
+        boxes = new Box[boxesLength][boxesLength];
+
+        // First we populate the cells' matrix looking for each cell possible values
+        CreateAndCleanCells(grid);
+
+        // Then populates the boxes' matrix cleaning the default values
+        CreateAndCleanBoxes();
+    }
+
+    /**
+     * Given a grid populate a cells matrix looking for each cell possible values
+     * @param grid a matrix with the sodoku default values.
+     */
+    private void CreateAndCleanCells(int[][] grid){
+        // A list for rows and columns default values
+        List<List<Integer>> rowDefaultValues = new ArrayList<>(this.cells.length);
+        List<List<Integer>> columnDefaultValues = new ArrayList<>(this.cells.length);
         for (int i = 0; i < cells.length; i++){
             rowDefaultValues.add(new ArrayList<>());
             columnDefaultValues.add(new ArrayList<>());
         }
+
+        // Find and save each default value
         for(int i = 0; i < cells.length; i++){
             rowDefaultValues.add(new ArrayList<>());
             for (int j = 0; j < cells.length; j++){
@@ -41,7 +59,7 @@ public class Sodoku {
             }
         }
 
-        // Then we loop through the grid looking for the possible values of each cell
+        // Then we loop through the grid looking for each possible value for each cell
         for(int i = 0; i < cells.length; i++){
             for (int j = 0; j < cells.length; j++){
                 int value = grid[i][j];
@@ -63,13 +81,17 @@ public class Sodoku {
                 cells[i][j] = cell;
             }
         }
+    }
 
-        // Finally, is necessary to create the boxes
-        int boxesLength = (int)Math.sqrt(cells.length);
-        boxes = new Box[boxesLength][boxesLength];
-        int minX = 0, maxX = boxesLength - 1, minY = 0, maxY = boxesLength - 1;
-        for (int i = 0; i < boxesLength; i++){
-            for (int j = 0; j < boxesLength; j++){
+    /**
+     * Create the sodoku boxes, then find the default values of each to clean them from the default values
+     * of each cell within each box.
+     */
+    public void CreateAndCleanBoxes(){
+        // The box incremental data
+        int minX = 0, maxX = boxes.length - 1, minY = 0, maxY = boxes.length - 1;
+        for (int i = 0; i < boxes.length; i++){
+            for (int j = 0; j < boxes.length; j++){
                 // Determines if the box is going to evaluate row, columns or neither
                 Box.ToEvaluate toEvaluate = Box.ToEvaluate.None;
                 if (i == 0){
@@ -93,25 +115,21 @@ public class Sodoku {
                 Box box = new Box(cells, toEvaluate,minX, maxX, minY, maxY);
                 boxes[i][j] = box;
 
+                // Clean the cells of the box from its default values
+                box.CleanDefaultValuesInBox();
+
                 // Determines the range of the next box in the x-axis
                 if (maxX == cells.length - 1){
                     minX = 0;
-                    maxX = boxesLength - 1;
+                    maxX = boxes.length - 1;
                 }else{
                     minX = maxX + 1;
-                    maxX += boxesLength;
+                    maxX += boxes.length;
                 }
             }
             // Determines the range of the next box en int y-axis
             minY = maxY + 1;
-            maxY += boxesLength;
-        }
-
-        // The last step is clean the default values from each cell in each box
-        for (int i = 0; i < boxesLength; i++){
-            for(int j = 0; j < boxesLength; j++){
-                boxes[i][j].CleanDefaultValuesInBox();
-            }
+            maxY += boxes.length;
         }
     }
 
