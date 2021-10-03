@@ -11,7 +11,7 @@ import java.util.List;
 @Slf4j
 public class Sodoku {
     // A matrix with the cells of the sodoku
-    private Cell[][] cells;
+    public Cell[][] cells;
     // A matrix with the boxes of the sodoku
     private Box[][] boxes;
 
@@ -22,7 +22,6 @@ public class Sodoku {
     public Sodoku(int[][] grid){
         // Initialize the cells matrix
         this.cells = new Cell[grid.length][grid.length];
-
 
         // First we need the default values of each row and column
         List<List<Integer>> rowDefaultValues = new ArrayList<>(cells.length);
@@ -108,6 +107,12 @@ public class Sodoku {
             maxY += boxesLength;
         }
 
+        // The last step is clean the default values from each cell in each box
+        for (int i = 0; i < boxesLength; i++){
+            for(int j = 0; j < boxesLength; j++){
+                boxes[i][j].CleanDefaultValuesInBox();
+            }
+        }
     }
 
     public Cell[][] GetCells(){
