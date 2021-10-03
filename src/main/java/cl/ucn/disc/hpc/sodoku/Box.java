@@ -1,5 +1,8 @@
 package cl.ucn.disc.hpc.sodoku;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Represent a box of n cells in the sodoku.
  */
@@ -40,48 +43,83 @@ public class Box {
     }
 
     /**
-     * Loop through each column or row in this box to apply the elimination technique.
-     * @return true if the possible values of one or more cells were changed.
+     * Clean a possible value from each cell in the box
+     * @param value the value.
      */
-    public boolean Elimination(){
-        // Which is this going to evaluate?
-        if (toEvaluate == ToEvaluate.Row){
-            return RowElimination();
-        }else if(toEvaluate == ToEvaluate.Column){
-            return ColumnElimination();
-        }
-
-        return false;
-    }
-
-    public boolean RowElimination(){
-        // Loop trough each row in the box
+    public void CleanPossibleValueInBox(int value){
+        // Loop through the cells inside the box
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
-            for (int j = i; j < cells[0].length; j++){
-                // Is this cell not by default and does it have only on possible value?
-                if (!cells[i][j].GetIsByDefault() && cells[i][j].HasOnlyOnePossibleValue()){
-                    // Evaluate if this cell is the only valid cell for the value
-                    int value = cells[i][j].GetFirstPossibleValue();
-                    boolean found = false;
-                    for (int k = 0; k < cells[0].length; k++){
-                        // Omit this cell
-                        if (k != j){
-                            if (cells[i][k].HasPossibleValue(value)){
-                                found = true;
-                                break;
-                            }
-                        }
-                    }
-                    // If the value was not found we clean the box, row and column
+            for(int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                Cell cell = cells[i][j];
+                if (!cell.GetIsByDefault() && !cell.HasOnlyOnePossibleValue()){
+                    cell.RemovePossibleValue(value);
                 }
             }
         }
-
-        return false;
     }
 
-    public boolean ColumnElimination(){
-        return true;
+    /**
+     * Clean a possible value from each cell int the box skipping a cell
+     * @param value the value.
+     * @param toSkip the cell to skip.
+     */
+    public void ClenPossibleValueInBox(int value, Cell toSkip){
+        // Loop through the cells inside the box
+        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for(int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                Cell cell = cells[i][j];
+                if (cell != toSkip && !cell.GetIsByDefault() && !cell.HasOnlyOnePossibleValue()){
+                    cell.RemovePossibleValue(value);
+                }
+            }
+        }
     }
 
+    /**
+     * Clean a set of possible values from each cell in the box
+     * @param values a list with the values.
+     */
+    public void CleanPossibleValuesInBox(List<Integer> values){
+        // Loop through the cells inside the box
+        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for(int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                Cell cell = cells[i][j];
+                if (!cell.GetIsByDefault() && !cell.HasOnlyOnePossibleValue()){
+                    cell.RemovePossibleValues(values);
+                }
+            }
+        }
+    }
+
+    /**
+     * Clean a set of possible values from each cell skipping a cell.
+     * @param values a list with the values.
+     * @param toSkip the cell to skip.
+     */
+    public void CleanPossibleValuesInBox(List<Integer> values, Cell toSkip){
+        // Loop through the cells inside the box
+        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for(int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                Cell cell = cells[i][j];
+                if (cell != toSkip && !cell.GetIsByDefault() && !cell.HasOnlyOnePossibleValue()){
+                    cell.RemovePossibleValues(values);
+                }
+            }
+        }
+    }
+
+    public void CleanDefaultValuesInBox(){
+        // Store the default values
+        List<Integer> boxDefaultValues = new ArrayList<>();
+        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for(int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                Cell cell = cells[i][j];
+                if (cell.GetIsByDefault()){
+                    boxDefaultValues.add(cell.GetFirstPossibleValue());
+                }
+            }
+        }
+        // Clean the values
+        CleanPossibleValuesInBox(boxDefaultValues);
+    }
 }
