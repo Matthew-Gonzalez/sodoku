@@ -63,8 +63,17 @@ public class Cell {
      * Check if there is only one possible value.
      * @return true if the size of the list is 1.
      */
-    public boolean HasOnlyOneValue(){
+    public boolean HasOnlyOnePossibleValue(){
         return possibleValues.size() == 1;
+    }
+
+    /**
+     * Check if this cell has a possible value
+     * @param value the value.
+     * @return true if the value exists.
+     */
+    public boolean HasPossibleValue(int value){
+        return possibleValues.contains(value);
     }
 
     /**
