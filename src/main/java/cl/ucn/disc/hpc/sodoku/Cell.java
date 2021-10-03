@@ -61,8 +61,9 @@ public class Cell {
      */
     public void RemovePossibleValue(int value){
         // Check if the value already exists
-        if(possibleValues.contains(value)){
-            possibleValues.remove(value);
+        int index = possibleValues.indexOf(value);
+        if (index >= 0){
+            possibleValues.remove(index);
         }
     }
 
