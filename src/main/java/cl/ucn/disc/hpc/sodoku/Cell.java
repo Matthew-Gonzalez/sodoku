@@ -1,5 +1,6 @@
 package cl.ucn.disc.hpc.sodoku;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -18,6 +19,9 @@ public class Cell {
      * The constructor of a cell
      */
     public Cell(){
+        // Initialize the list
+        this.possibleValues = new ArrayList<>();
+
         this.isByDefault = false;
         this.isLock = false;
     }
@@ -27,6 +31,9 @@ public class Cell {
      * @param value the default value of the cell.
      */
     public Cell(int value){
+        // Initialize the list
+        this.possibleValues = new ArrayList<>();
+
         this.isByDefault = true;
         this.isLock = true;
 
