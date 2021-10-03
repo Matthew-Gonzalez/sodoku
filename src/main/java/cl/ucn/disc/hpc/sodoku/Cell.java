@@ -67,6 +67,16 @@ public class Cell {
     }
 
     /**
+     * Remove a set of possible values.
+     * @param values a list with the values.
+     */
+    public void RemovePossibleValues(List<Integer> values){
+        for (Integer value : values) {
+            RemovePossibleValue(value);
+        }
+    }
+
+    /**
      * Check if there is only one possible value.
      * @return true if the size of the list is 1.
      */
