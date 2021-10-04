@@ -59,33 +59,41 @@ public class Cell {
     /**
      * Remove a possible value.
      * @param value the value.
+     * @return true if the value was removed.
      */
-    public void RemovePossibleValue(int value){
+    public boolean RemovePossibleValue(int value){
         if (isByDefault || possibleValues.size() == 1){
-            return;
+            return false;
         }
         // Check if the value already exists
         int index = possibleValues.indexOf(value);
         if (index >= 0){
             possibleValues.remove(index);
+            return true;
+        }else{
+            return false;
         }
     }
 
     /**
      * Remove a set of possible values.
      * @param values a list with the values.
+     * @return true if any of the values was removed.
      */
-    public void RemovePossibleValues(List<Integer> values){
+    public boolean RemovePossibleValues(List<Integer> values){
         if (isByDefault || possibleValues.size() == 1){
-            return;
+            return false;
         }
+        int eliminations = 0;
         for (Integer value : values) {
             // Check if the value already exists
             int index = possibleValues.indexOf(value);
             if (index >= 0){
                 possibleValues.remove(index);
+                eliminations++;
             }
         }
+        return eliminations > 0;
     }
 
     /**
