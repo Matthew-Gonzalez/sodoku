@@ -1,6 +1,7 @@
 package cl.ucn.disc.hpc.sodoku;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -60,6 +61,9 @@ public class Cell {
      * @param value the value.
      */
     public void RemovePossibleValue(int value){
+        if (isByDefault || possibleValues.size() == 1){
+            return;
+        }
         // Check if the value already exists
         int index = possibleValues.indexOf(value);
         if (index >= 0){
@@ -72,8 +76,15 @@ public class Cell {
      * @param values a list with the values.
      */
     public void RemovePossibleValues(List<Integer> values){
+        if (isByDefault || possibleValues.size() == 1){
+            return;
+        }
         for (Integer value : values) {
-            RemovePossibleValue(value);
+            // Check if the value already exists
+            int index = possibleValues.indexOf(value);
+            if (index >= 0){
+                possibleValues.remove(index);
+            }
         }
     }
 
