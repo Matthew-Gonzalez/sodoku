@@ -84,16 +84,16 @@ public class Cell {
         if (isByDefault || possibleValues.size() == 1){
             return false;
         }
-        int eliminations = 0;
+        int removed = 0;
         for (Integer value : values) {
             // Check if the value already exists
             int index = possibleValues.indexOf(value);
             if (index >= 0){
                 possibleValues.remove(index);
-                eliminations++;
+                removed++;
             }
         }
-        return eliminations > 0;
+        return removed > 0;
     }
 
     /**
