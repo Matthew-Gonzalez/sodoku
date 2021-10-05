@@ -1,5 +1,7 @@
 package cl.ucn.disc.hpc.sodoku;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -97,20 +99,21 @@ public class Cell {
     }
 
     /**
+     * Given a value remove all possible values except that one.
+     * @param value the value to maintain.
+     */
+    public void RemovePossibleValuesExceptOne(int value){
+        possibleValues.clear();
+        possibleValues.add(value);
+    }
+
+    /**
      * Given a pair remove all possible values except that pair.
      * @param pair the pair.
      */
     public void RemovePossibleValuesExceptPair(Integer[] pair){
-        List<Integer> toRemove = new ArrayList<>();
-        // Find and store the values different from pair values
-        for (int i = 0; i < possibleValues.size(); i++){
-            int value = possibleValues.get(i);
-            if (value != pair[0] && value != pair[1]){
-                toRemove.add(value);
-            }
-        }
-        // Removes the values
-        possibleValues.removeAll(toRemove);
+        List<Integer> pairAsList = Arrays.asList(pair);
+        possibleValues.retainAll(pairAsList);
     }
 
     /**
