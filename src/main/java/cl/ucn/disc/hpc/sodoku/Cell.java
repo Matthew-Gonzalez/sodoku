@@ -129,6 +129,25 @@ public class Cell {
         return this.possibleValues;
     }
 
+    /**
+     * Get a list with the unique pairs between the possible values for the cell
+     * @return a list of arrays where each array is a pair.
+     */
+    public List<Integer[]> GetUniquePairs(){
+        List<Integer[]> pairs = new ArrayList<>();
+        for (int i = 0; i < this.possibleValues.size() - 1; i++){
+            for (int j = i + 1; j < this.possibleValues.size(); j++){
+                Integer[] temp = {this.possibleValues.get(i),this.possibleValues.get(j)};
+                pairs.add(temp);
+            }
+        }
+        return pairs;
+    }
+
+
+    public boolean HasPair(Integer[] pair){
+        return this.possibleValues.contains(pair[0]) && this.possibleValues.contains(pair[1]);
+    }
 
     /**
      * A cell value can be by default.
