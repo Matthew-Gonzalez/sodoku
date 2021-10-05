@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Stack;
 
 /**
  * Represent a box of n cells in the sodoku.
@@ -70,6 +69,143 @@ public class Box {
             }
         }
         return true;
+    }
+
+    /**
+     * Uses Elimination technique to clean the rows or columns.
+     * @return true if a change was made.
+     */
+    public boolean SimpleEliminationRowsColumns(){
+        // A box can only evaluate its rows or columns at once
+        if (this.toEvaluate == ToEvaluate.Row){
+            return SimpleEliminationRow();
+        }
+        else if (this.toEvaluate == ToEvaluate.Column){
+            return SimpleEliminationColumn();
+        }
+        return false;
+    }
+
+    /**
+     * Cleans the rows of the box using Elimination technique.
+     * @return true if any change was made.
+     */
+    private boolean SimpleEliminationRow(){
+        int changes = 0;
+        // Loop through the box rows
+        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = 0; j < cells.length; j++){
+                //For each cell in the row, we must verify if for any of its possible values it is the only valid cell
+                Cell cell = cells[i][j];
+                if (!cell.GetIsByDefault() && !cell.HasOnlyOnePossibleValue()){
+                    for (int k = 0; k < cell.GetPossibleValues().size(); k++){
+                        int value = cell.GetPossibleValues().get(k);
+                        boolean isUnique = true;
+                        // We loop through the row again
+                        for (int h = 0; h < cells.length; h++){
+                            // We omit the main cell
+                            if (h == j){
+                                continue;
+                            }
+                            Cell temp = cells[i][h];
+                            // If the value is not unique in the row
+                            if (temp.HasPossibleValue(value)){
+                                isUnique = false;
+                                break;
+                            }
+                        }
+                        // If the value was unique we clean the other possible values from the cell
+                        if (isUnique){
+                            cell.RemovePossibleValuesExceptOne(value);
+                            changes++;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return changes > 0;
+    }
+
+    private boolean SimpleEliminationColumn(){
+        int changes = 0;
+        // Loop through the box rows
+        for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+            for (int i = 0; i < cells.length; i++){
+                //For each cell in the row, we must verify if for any of its possible values it is the only valid cell
+                Cell cell = cells[i][j];
+                if (!cell.GetIsByDefault() && !cell.HasOnlyOnePossibleValue()){
+                    for (int k = 0; k < cell.GetPossibleValues().size(); k++){
+                        int value = cell.GetPossibleValues().get(k);
+                        boolean isUnique = true;
+                        // We loop through the columns again
+                        for (int h = 0; h < cells.length; h++){
+                            // We omit the main cell
+                            if (h == i){
+                                continue;
+                            }
+                            Cell temp = cells[h][j];
+                            // If the value is not unique in the row
+                            if (temp.HasPossibleValue(value)){
+                                isUnique = false;
+                                break;
+                            }
+                        }
+                        // If the value was unique we clean the other possible values from the cell
+                        if (isUnique){
+                            cell.RemovePossibleValuesExceptOne(value);
+                            changes++;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return changes > 0;
+    }
+
+    /**
+     * Cleans the box using Elimination technique.
+     * @return true if any change was made.
+     */
+    public boolean SimpleEliminationBox(){
+        int changes = 0;
+        // Loop through the box rows
+        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = 0; j < cells.length; j++){
+                //For each cell in the row, we must verify if for any of its possible values it is the only valid cell
+                Cell cell = cells[i][j];
+                if (!cell.GetIsByDefault() && !cell.HasOnlyOnePossibleValue()){
+                    for (int k = 0; k < cell.GetPossibleValues().size(); k++){
+                        int value = cell.GetPossibleValues().get(k);
+                        boolean isUnique = true;
+                        // We loop through the row again. We use a label to break the inner loop
+                        find :
+                        for (int l = yFromTo[0]; l <= yFromTo[1]; l++){
+                            for(int m = xFromTo[0]; m <= xFromTo[1]; m++){
+                                // We omit the main cell
+                                if (l == i && m == j){
+                                    continue;
+                                }
+                                Cell temp = cells[l][m];
+                                // If the value is not unique in the row
+                                if (temp.HasPossibleValue(value)){
+                                    isUnique = false;
+                                    break find;
+                                }
+                            }
+                        }
+                        // If the value was unique we clean the other possible values from the cell
+                        if (isUnique){
+                            cell.RemovePossibleValuesExceptOne(value);
+                            changes++;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return changes > 0;
     }
 
     /**
@@ -143,7 +279,7 @@ public class Box {
                 // We are looking for a not default cell with only one possible value
                 Cell cell = cells[i][j];
                 if (!cell.GetIsByDefault() && cell.HasOnlyOnePossibleValue()){
-                    // Clean the column
+                    // Clean the box
                     if (CleanPossibleValueInBox(cell.GetFirstPossibleValue(), cell)){
                         changes++;
                     }
@@ -282,25 +418,25 @@ public class Box {
                         boolean isValid = false;
                         // We use a label to break the inner loop
                         find :
-                            for (int l = yFromTo[0]; l <= yFromTo[1]; l++){
-                                for(int m = xFromTo[0]; m <= xFromTo[1]; m++){
-                                    // We omit the main cell
-                                    if (l == i && m == j){
-                                        continue;
-                                    }
-                                    // Is this a valid candidate?
-                                    Cell temp = cells[l][m];
-                                    if (!temp.GetIsByDefault() && temp.GetPossibleValues().size() >= 3 && temp.HasPair(pairs.get(k))){
-                                        if (candidate != null){
-                                            isValid = false;
-                                            break find;
-                                        }else{
-                                            candidate = temp;
-                                            isValid = true;
-                                        }
+                        for (int l = yFromTo[0]; l <= yFromTo[1]; l++){
+                            for(int m = xFromTo[0]; m <= xFromTo[1]; m++){
+                                // We omit the main cell
+                                if (l == i && m == j){
+                                    continue;
+                                }
+                                // Is this a valid candidate?
+                                Cell temp = cells[l][m];
+                                if (!temp.GetIsByDefault() && temp.GetPossibleValues().size() >= 3 && temp.HasPair(pairs.get(k))){
+                                    if (candidate != null){
+                                        isValid = false;
+                                        break find;
+                                    }else{
+                                        candidate = temp;
+                                        isValid = true;
                                     }
                                 }
                             }
+                        }
                         // Do we need to clean the both cells
                         if (isValid){
                             cell.RemovePossibleValuesExceptPair(pairs.get(k));
