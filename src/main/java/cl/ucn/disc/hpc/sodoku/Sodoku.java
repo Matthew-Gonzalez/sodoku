@@ -133,6 +133,83 @@ public class Sodoku {
         }
     }
 
+    public void Solve(){
+        int securityAttempts = 200;
+        while (securityAttempts > 0){
+            boolean longRangerElimination = LoneRangerElimination();
+            if (!IsTheSodokuSolved() && !longRangerElimination) {
+                log.debug("Attempts: {}", 200 - securityAttempts);
+                return;
+            }
+            securityAttempts--;
+        }
+    }
+
+    /**
+     * Check if the sodoku is solved.
+     * @return true if the sodoku is solved.
+     */
+    public boolean IsTheSodokuSolved(){
+        for (int i = 0; i < boxes.length; i++){
+            for (int j = 0; j < boxes.length; j++){
+                Box box = boxes[i][j];
+                if (!box.IsThisBoxValid()){
+                    return false;
+                }
+            }
+        }
+        return  true;
+    }
+
+    /**
+     * Lone Rangers elimination technique.
+     * @return true if a change was made.
+     */
+    public boolean LoneRangerElimination(){
+        int changes = 0;
+        // First we need to clean the boxes
+        for (int i = 0; i < boxes.length; i++){
+            for (int j = 0; j < boxes.length; j++){
+                Box box = boxes[i][j];
+                if (box.LoneRangersBox()){
+                    changes++;
+                }
+            }
+        }
+        // Then, we clean the rows and columns
+        for (int i = 0; i < boxes.length; i++){
+            for (int j = 0; j < boxes.length; j++){
+                Box box = boxes[i][j];
+                if(box.LoneRangersRowsColumns()){
+                    changes++;
+                }
+            }
+        }
+        return changes > 0;
+    }
+
+    public void TwinsElimination(){
+        for (int i = 0; i < boxes.length; i++){
+            for (int j = 0; j < boxes.length; j++){
+                Box box = boxes[i][j];
+                box.Twins();
+            }
+        }
+    }
+
+    public void GetTwins(){
+        for (int i = 0; i < cells.length; i++){
+            for (int k = 0; k < cells.length; k++){
+                log.debug("Cell values: {}", cells[i][k].GetPossibleValues());
+                log.debug("Cell twins:");
+                List<Integer[]> twins = cells[i][k].GetUniquePairs();
+                for (int h = 0; h < twins.size(); h++){
+                    log.debug("   [{},{}]", twins.get(h)[0], twins.get(h)[1]);
+                }
+            }
+        }
+    }
+
     public Cell[][] GetCells(){
         return this.cells;
     }
