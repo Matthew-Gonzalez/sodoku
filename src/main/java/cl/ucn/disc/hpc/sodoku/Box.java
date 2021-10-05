@@ -153,6 +153,10 @@ public class Box {
         return changes > 0;
     }
 
+    /**
+     * Uses Twins' technique to clean the rows or columns
+     * @return true if a change was made.
+     */
     public boolean Twins(){
         if (this.toEvaluate == ToEvaluate.Row){
             return TwinsRow();
@@ -163,7 +167,11 @@ public class Box {
         return false;
     }
 
-    public boolean TwinsRow(){
+    /**
+     * Clean the rows of the box using Twins' technique
+     * @return true if a change was made.
+     */
+    private boolean TwinsRow(){
         int changes = 0;
         // Loop through the box cells
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
@@ -207,7 +215,11 @@ public class Box {
         return changes > 0;
     }
 
-    public boolean TwinsColumn(){
+    /**
+     * Clean the columns of the box using Twins' technique
+     * @return true if a change was made.
+     */
+    private boolean TwinsColumn(){
         int changes = 0;
         // Loop through the box cells
         for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
@@ -215,10 +227,8 @@ public class Box {
                 // We are looking for a not default cell with three or more possible values
                 Cell cell = cells[i][j];
                 if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 3){
-                    log.debug("Celda candidata: {}", cell.GetPossibleValues());
                     List<Integer[]> pairs = cell.GetUniquePairs();
                     for (int k = 0; k < pairs.size(); k++){
-                        log.debug("    Buscando celda para el par: [{},{}]", pairs.get(k)[0], pairs.get(k)[1]);
                         // We need to check if only one candidate cell was found
                         Cell candidate = null;
                         boolean isValid = false;
@@ -230,9 +240,7 @@ public class Box {
                             // Is this a valid candidate?
                             Cell temp = cells[i][h];
                             if (!temp.GetIsByDefault() && temp.GetPossibleValues().size() >= 3 && temp.HasPair(pairs.get(k))){
-                                log.debug("      Candidata encontrada: {}", temp.GetPossibleValues());
                                 if (candidate != null){
-                                    log.debug("       Pero ya habia otra antes, no se aplica twins");
                                     isValid = false;
                                     break;
                                 }else{
@@ -243,11 +251,60 @@ public class Box {
                         }
                         // Do we need to clean the both cells
                         if (isValid){
-                            log.debug("       Es la unica candidata!!!");
                             cell.RemovePossibleValuesExceptPair(pairs.get(k));
                             candidate.RemovePossibleValuesExceptPair(pairs.get(k));
-                            log.debug("       Resultado de la celda principal: {}", cell.GetPossibleValues());
-                            log.debug("       Resultado de la celda candidata: {}", candidate.GetPossibleValues());
+                            changes++;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return changes > 0;
+    }
+
+    /**
+     * Clean the box using Twins' technique
+     * @return true if a change was made.
+     */
+    public boolean TwinsBox(){
+        int changes = 0;
+        // Loop through the box cells
+        for(int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                // We are looking for a not default cell with three or more possible values
+                Cell cell = cells[i][j];
+                if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 3){
+                    List<Integer[]> pairs = cell.GetUniquePairs();
+                    for (int k = 0; k < pairs.size(); k++){
+                        // We need to check if only one candidate cell was found
+                        Cell candidate = null;
+                        boolean isValid = false;
+                        // We use a label to break the inner loop
+                        find :
+                            for (int l = yFromTo[0]; l <= yFromTo[1]; l++){
+                                for(int m = xFromTo[0]; m <= xFromTo[1]; m++){
+                                    // We omit the main cell
+                                    if (l == i && m == j){
+                                        continue;
+                                    }
+                                    // Is this a valid candidate?
+                                    Cell temp = cells[l][m];
+                                    if (!temp.GetIsByDefault() && temp.GetPossibleValues().size() >= 3 && temp.HasPair(pairs.get(k))){
+                                        if (candidate != null){
+                                            isValid = false;
+                                            break find;
+                                        }else{
+                                            candidate = temp;
+                                            isValid = true;
+                                        }
+                                    }
+                                }
+                            }
+                        // Do we need to clean the both cells
+                        if (isValid){
+                            cell.RemovePossibleValuesExceptPair(pairs.get(k));
+                            candidate.RemovePossibleValuesExceptPair(pairs.get(k));
                             changes++;
                             break;
                         }
