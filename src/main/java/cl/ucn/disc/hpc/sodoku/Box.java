@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
 /**
  * Represent a box of n cells in the sodoku.
@@ -82,9 +83,8 @@ public class Box {
         }
         else if (this.toEvaluate == ToEvaluate.Column){
             return LoneRangersColumn();
-        }else {
-            return false;
         }
+        return false;
     }
 
     /**
@@ -103,7 +103,6 @@ public class Box {
                     if(CleanPossibleValuesInRow(cell.GetFirstPossibleValue(), i, j)){
                         changes++;
                     }
-
                 }
             }
         }
@@ -154,33 +153,109 @@ public class Box {
         return changes > 0;
     }
 
-    public void Twins(){
+    public boolean Twins(){
         if (this.toEvaluate == ToEvaluate.Row){
-            TwinsRow();
+            return TwinsRow();
         }
         else if (this.toEvaluate == ToEvaluate.Column){
-            TwinsColumn();
+            return TwinsColumn();
         }
+        return false;
     }
 
-    public void TwinsRow(){
+    public boolean TwinsRow(){
+        int changes = 0;
         // Loop through the box cells
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
             for (int j = 0; j < cells.length; j++){
-                // We are looking for a not default cell with two or more possible values
+                // We are looking for a not default cell with three or more possible values
                 Cell cell = cells[i][j];
-                if (!cell.GetIsByDefault() && !cell.HasOnlyOnePossibleValue()){
-                    List<Integer[]> twins = cell.GetUniquePairs();
-                    for (int k = 0; k < twins.size(); k++){
-                        log.debug("[{},{}]", twins.get(k)[0], twins.get(k)[1]);
+                if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 3){
+                    List<Integer[]> pairs = cell.GetUniquePairs();
+                    for (int k = 0; k < pairs.size(); k++){
+                        // We need to check if only one candidate cell was found
+                        Cell candidate = null;
+                        boolean isValid = false;
+                        for (int h = 0; h < cells.length; h++){
+                            // We omit the main cell
+                            if (h == j){
+                                continue;
+                            }
+                            // Is this a valid candidate?
+                            Cell temp = cells[i][h];
+                            if (!temp.GetIsByDefault() && temp.GetPossibleValues().size() >= 3 && temp.HasPair(pairs.get(k))){
+                                if (candidate != null){
+                                    isValid = false;
+                                    break;
+                                }else{
+                                    candidate = temp;
+                                    isValid = true;
+                                }
+                            }
+                        }
+                        // Do we need to clean the both cells
+                        if (isValid){
+                            cell.RemovePossibleValuesExceptPair(pairs.get(k));
+                            candidate.RemovePossibleValuesExceptPair(pairs.get(k));
+                            changes++;
+                            break;
+                        }
                     }
                 }
             }
         }
+        return changes > 0;
     }
 
-    public void TwinsColumn(){
-
+    public boolean TwinsColumn(){
+        int changes = 0;
+        // Loop through the box cells
+        for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+            for (int i = 0; i < cells.length; i++){
+                // We are looking for a not default cell with three or more possible values
+                Cell cell = cells[i][j];
+                if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 3){
+                    log.debug("Celda candidata: {}", cell.GetPossibleValues());
+                    List<Integer[]> pairs = cell.GetUniquePairs();
+                    for (int k = 0; k < pairs.size(); k++){
+                        log.debug("    Buscando celda para el par: [{},{}]", pairs.get(k)[0], pairs.get(k)[1]);
+                        // We need to check if only one candidate cell was found
+                        Cell candidate = null;
+                        boolean isValid = false;
+                        for (int h = 0; h < cells.length; h++){
+                            // We omit the main cell
+                            if (h == i){
+                                continue;
+                            }
+                            // Is this a valid candidate?
+                            Cell temp = cells[i][h];
+                            if (!temp.GetIsByDefault() && temp.GetPossibleValues().size() >= 3 && temp.HasPair(pairs.get(k))){
+                                log.debug("      Candidata encontrada: {}", temp.GetPossibleValues());
+                                if (candidate != null){
+                                    log.debug("       Pero ya habia otra antes, no se aplica twins");
+                                    isValid = false;
+                                    break;
+                                }else{
+                                    candidate = temp;
+                                    isValid = true;
+                                }
+                            }
+                        }
+                        // Do we need to clean the both cells
+                        if (isValid){
+                            log.debug("       Es la unica candidata!!!");
+                            cell.RemovePossibleValuesExceptPair(pairs.get(k));
+                            candidate.RemovePossibleValuesExceptPair(pairs.get(k));
+                            log.debug("       Resultado de la celda principal: {}", cell.GetPossibleValues());
+                            log.debug("       Resultado de la celda candidata: {}", candidate.GetPossibleValues());
+                            changes++;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return changes > 0;
     }
 
     /**
