@@ -1,11 +1,14 @@
 package cl.ucn.disc.hpc.sodoku;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Represent a box of n cells in the sodoku.
  */
+@Slf4j
 public class Box {
 
     /**
@@ -42,41 +45,142 @@ public class Box {
         this.yFromTo = new Integer[]{yFrom, yTo};
     }
 
-    public void LoneRangers(){
+    /**
+     * Check if this is a valid box
+     * @return true if the box is valid
+     */
+    public boolean IsThisBoxValid(){
+        List<Integer> values = new ArrayList<>();
+        // Loop through the cells
+        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                Cell cell = cells[i][j];
+                // Check if the cell has only one possible value
+                if (!cell.HasOnlyOnePossibleValue()){
+                    return false;
+                }
+                // Check if the value is repeated
+                int value = cell.GetFirstPossibleValue();
+                if (values.contains(value)){
+                    log.warn("A box with the cell[{}][{}] has a repeated value", i, j);
+                    return false;
+                }
+                values.add(value);
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Uses Lone Rangers' technique to clean the rows or columns
+     * @return true if a change was made.
+     */
+    public boolean LoneRangersRowsColumns(){
+        // A box can only evaluate its rows or columns at once
         if (this.toEvaluate == ToEvaluate.Row){
-            LoneRangersRow();
+            return LoneRangersRow();
         }
         else if (this.toEvaluate == ToEvaluate.Column){
-            LoneRangersColumn();
+            return LoneRangersColumn();
+        }else {
+            return false;
         }
     }
 
-    private void LoneRangersRow(){
-        // Loop through the box cells
+    /**
+     * Clean the rows of the box using Lone Rangers' technique
+     * @return true if a change was made.
+     */
+    private boolean LoneRangersRow(){
+        int changes = 0;
+        // Loop through the box rows
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
             for (int j = 0; j < cells.length; j++){
                 // We are looking for a not default cell with only one possible value
                 Cell cell = cells[i][j];
                 if (!cell.GetIsByDefault() && cell.HasOnlyOnePossibleValue()){
                     // Clean the row
-                    CleanPossibleValuesInRow(cell.GetFirstPossibleValue(), i, j);
+                    if(CleanPossibleValuesInRow(cell.GetFirstPossibleValue(), i, j)){
+                        changes++;
+                    }
+
                 }
             }
         }
+        return changes > 0;
     }
 
-    private void LoneRangersColumn(){
-        // Loop through the box cells
+    /**
+     * Clean the columns of the box using Lone Rangers' technique
+     * @return true if a change was made.
+     */
+    private boolean LoneRangersColumn(){
+        int changes = 0;
+        // Loop through the box columns
         for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
             for (int i = 0; i < cells.length; i++){
                 // We are looking for a not default cell with only one possible value
                 Cell cell = cells[i][j];
                 if (!cell.GetIsByDefault() && cell.HasOnlyOnePossibleValue()){
                     // Clean the column
-                    CleanPossibleValuesInColumn(cell.GetFirstPossibleValue(), j, i);
+                    if (CleanPossibleValuesInColumn(cell.GetFirstPossibleValue(), j, i)){
+                        changes++;
+                    }
                 }
             }
         }
+        return changes > 0;
+    }
+
+    /**
+     * Clean the box using Lone Rangers' technique
+     * @return true if a change was made.
+     */
+    public boolean LoneRangersBox(){
+        int changes = 0;
+        // Loop through the box cells
+        for(int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                // We are looking for a not default cell with only one possible value
+                Cell cell = cells[i][j];
+                if (!cell.GetIsByDefault() && cell.HasOnlyOnePossibleValue()){
+                    // Clean the column
+                    if (CleanPossibleValueInBox(cell.GetFirstPossibleValue(), cell)){
+                        changes++;
+                    }
+                }
+            }
+        }
+        return changes > 0;
+    }
+
+    public void Twins(){
+        if (this.toEvaluate == ToEvaluate.Row){
+            TwinsRow();
+        }
+        else if (this.toEvaluate == ToEvaluate.Column){
+            TwinsColumn();
+        }
+    }
+
+    public void TwinsRow(){
+        // Loop through the box cells
+        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = 0; j < cells.length; j++){
+                // We are looking for a not default cell with two or more possible values
+                Cell cell = cells[i][j];
+                if (!cell.GetIsByDefault() && !cell.HasOnlyOnePossibleValue()){
+                    List<Integer[]> twins = cell.GetUniquePairs();
+                    for (int k = 0; k < twins.size(); k++){
+                        log.debug("[{},{}]", twins.get(k)[0], twins.get(k)[1]);
+                    }
+                }
+            }
+        }
+    }
+
+    public void TwinsColumn(){
+
     }
 
     /**
@@ -97,92 +201,130 @@ public class Box {
         CleanPossibleValuesInBox(boxDefaultValues);
     }
 
-    public void CleanPossibleValuesInRow(int value, int row, int cellToSkipColumn){
+    /**
+     * Clean a value from a row in the box.
+     * @param value the value.
+     * @param row the row index.
+     * @param cellToSkipColumn the column of a cell that must be skipped.
+     * @return true if the value was removed from any of the cells.
+     */
+    public boolean CleanPossibleValuesInRow(int value, int row, int cellToSkipColumn){
+        int changes = 0;
         // Loop through the row
         for (int j = 0; j < cells.length; j++){
             // Check if we must skip the cell
             if (j != cellToSkipColumn){
                 Cell cell = cells[row][j];
-                cell.RemovePossibleValue(value);
+                if (cell.RemovePossibleValue(value)){
+                    changes++;
+                }
             }
         }
+        return changes > 0;
     }
 
-    public void CleanPossibleValuesInColumn(int value, int column, int cellToSkipRow){
+    /**
+     * Clean a value from a column in the box.
+     * @param value the value.
+     * @param column the column index.
+     * @param cellToSkipRow the row of a cell that must be skipped.
+     * @return true if the value was removed from any of the cells.
+     */
+    public boolean CleanPossibleValuesInColumn(int value, int column, int cellToSkipRow){
+        int changes = 0;
         // Loop through the column
         for (int i = 0; i < cells.length; i++){
             // Check if we must skip the cell
             if (i != cellToSkipRow){
                 Cell cell = cells[i][column];
-                cell.RemovePossibleValue(value);
+                if(cell.RemovePossibleValue(value)){
+                    changes++;
+                }
             }
         }
+        return changes > 0;
     }
 
     /**
      * Clean a possible value from each cell in the box
      * @param value the value.
+     * @return true if the value was removed from any of the cells.
      */
-    public void CleanPossibleValueInBox(int value){
+    public boolean CleanPossibleValueInBox(int value){
+        int changes = 0;
         // Loop through the cells inside the box
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
             for(int j = xFromTo[0]; j <= xFromTo[1]; j++){
                 Cell cell = cells[i][j];
-                if (!cell.GetIsByDefault() && !cell.HasOnlyOnePossibleValue()){
-                    cell.RemovePossibleValue(value);
+                if (cell.RemovePossibleValue(value)){
+                    changes++;
                 }
             }
         }
+        return changes > 0;
     }
 
     /**
      * Clean a possible value from each cell int the box skipping a cell
      * @param value the value.
      * @param toSkip the cell to skip.
+     * @return true if the value was removed from any of the cells.
      */
-    public void ClenPossibleValueInBox(int value, Cell toSkip){
+    public boolean CleanPossibleValueInBox(int value, Cell toSkip){
+        int changes = 0;
         // Loop through the cells inside the box
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
             for(int j = xFromTo[0]; j <= xFromTo[1]; j++){
                 Cell cell = cells[i][j];
-                if (cell != toSkip && !cell.GetIsByDefault() && !cell.HasOnlyOnePossibleValue()){
-                    cell.RemovePossibleValue(value);
+                if (cell != toSkip){
+                    if(cell.RemovePossibleValue(value)){
+                        changes++;
+                    }
                 }
             }
         }
+        return changes > 0;
     }
 
     /**
      * Clean a set of possible values from each cell in the box
      * @param values a list with the values.
+     * @return true if any of the values was removed from any of the cells.
      */
-    public void CleanPossibleValuesInBox(List<Integer> values){
+    public boolean CleanPossibleValuesInBox(List<Integer> values){
+        int changes = 0;
         // Loop through the cells inside the box
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
             for(int j = xFromTo[0]; j <= xFromTo[1]; j++){
                 Cell cell = cells[i][j];
-                if (!cell.GetIsByDefault() && !cell.HasOnlyOnePossibleValue()){
-                    cell.RemovePossibleValues(values);
+                if(cell.RemovePossibleValues(values)){
+                    changes++;
                 }
             }
         }
+        return changes > 0;
     }
 
     /**
      * Clean a set of possible values from each cell skipping a cell.
      * @param values a list with the values.
      * @param toSkip the cell to skip.
+     * @return true if the value was removed from any of the cells.
      */
-    public void CleanPossibleValuesInBox(List<Integer> values, Cell toSkip){
+    public boolean CleanPossibleValuesInBox(List<Integer> values, Cell toSkip){
+        int changes = 0;
         // Loop through the cells inside the box
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
             for(int j = xFromTo[0]; j <= xFromTo[1]; j++){
                 Cell cell = cells[i][j];
-                if (cell != toSkip && !cell.GetIsByDefault() && !cell.HasOnlyOnePossibleValue()){
-                    cell.RemovePossibleValues(values);
+                if (cell != toSkip){
+                    if(cell.RemovePossibleValues(values)){
+                        changes++;
+                    }
                 }
             }
         }
+        return changes > 0;
     }
 
 }
