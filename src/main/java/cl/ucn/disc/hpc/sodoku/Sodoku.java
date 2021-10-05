@@ -134,15 +134,40 @@ public class Sodoku {
     }
 
     public void Solve(){
-        int securityAttempts = 200;
+        int securityAttempts = 600;
         while (securityAttempts > 0){
-            boolean longRangerElimination = LoneRangerElimination();
-            if (!IsTheSodokuSolved() && !longRangerElimination) {
-                log.debug("Attempts: {}", 200 - securityAttempts);
+            boolean simpleElimination = SimpleElimination();
+            if (IsTheSodokuSolved()){
+                log.debug("Attempts : {}", 600 - securityAttempts);
                 return;
             }
-            securityAttempts--;
+            if (simpleElimination){
+                securityAttempts--;
+                continue;
+            }
+            boolean longRangerElimination = LoneRangerElimination();
+            if (IsTheSodokuSolved()){
+                log.debug("Attempts : {}", 600 - securityAttempts);
+                return;
+            }
+            if (longRangerElimination){
+                securityAttempts--;
+                continue;
+            }
+            boolean twinsElimination = TwinsElimination();
+            if (IsTheSodokuSolved()){
+                log.debug("Attempts : {}", 600 - securityAttempts);
+                return;
+            }
+            if (twinsElimination){
+                securityAttempts--;
+                continue;
+            }else{
+                log.debug("Attempts : {}", 600 - securityAttempts);
+                return;
+            }
         }
+        log.warn("Takes all attempts!!!");
     }
 
     /**
@@ -159,6 +184,33 @@ public class Sodoku {
             }
         }
         return  true;
+    }
+
+    /**
+     * Elimination technique.
+     * @return true if any change was made.
+     */
+    public boolean SimpleElimination(){
+        int changes = 0;
+        // First we need to clean the boxes
+        for (int i = 0; i < boxes.length; i++){
+            for (int j = 0; j < boxes.length; j++){
+                Box box = boxes[i][j];
+                if (box.SimpleEliminationBox()){
+                    changes++;
+                }
+            }
+        }
+        // Then, we clean the rows and columns
+        for (int i = 0; i < boxes.length; i++){
+            for (int j = 0; j < boxes.length; j++){
+                Box box = boxes[i][j];
+                if(box.SimpleEliminationRowsColumns()){
+                    changes++;
+                }
+            }
+        }
+        return changes > 0;
     }
 
     /**
@@ -188,33 +240,34 @@ public class Sodoku {
         return changes > 0;
     }
 
-    public void TwinsElimination(){
+    /**
+     * Twins elimination technique.
+     * @return true if a change was made.
+     */
+    public boolean TwinsElimination(){
+        int changes = 0;
+        // Firs we need to clean the boxes
         for (int i = 0; i < boxes.length; i++){
             for (int j = 0; j < boxes.length; j++){
                 Box box = boxes[i][j];
-                box.Twins();
-            }
-        }
-    }
-
-    public void GetTwins(){
-        for (int i = 0; i < cells.length; i++){
-            for (int k = 0; k < cells.length; k++){
-                log.debug("Cell values: {}", cells[i][k].GetPossibleValues());
-                log.debug("Cell twins:");
-                List<Integer[]> twins = cells[i][k].GetUniquePairs();
-                for (int h = 0; h < twins.size(); h++){
-                    log.debug("   [{},{}]", twins.get(h)[0], twins.get(h)[1]);
+                if (box.TwinsBox()){
+                    changes++;
                 }
             }
         }
+        // Then we clean the rows and columns
+        for (int i = 0; i < boxes.length; i++){
+            for (int j = 0; j < boxes.length; j++){
+                Box box = boxes[i][j];
+                if (box.Twins()){
+                    changes++;
+                }
+            }
+        }
+        return  changes > 0;
     }
 
     public Cell[][] GetCells(){
         return this.cells;
-    }
-
-    public Box[][] GetBoxes(){
-        return this.boxes;
     }
 }
