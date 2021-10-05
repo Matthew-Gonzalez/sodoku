@@ -97,6 +97,23 @@ public class Cell {
     }
 
     /**
+     * Given a pair remove all possible values except that pair.
+     * @param pair the pair.
+     */
+    public void RemovePossibleValuesExceptPair(Integer[] pair){
+        List<Integer> toRemove = new ArrayList<>();
+        // Find and store the values different from pair values
+        for (int i = 0; i < possibleValues.size(); i++){
+            int value = possibleValues.get(i);
+            if (value != pair[0] && value != pair[1]){
+                toRemove.add(value);
+            }
+        }
+        // Removes the values
+        possibleValues.removeAll(toRemove);
+    }
+
+    /**
      * Check if there is only one possible value.
      * @return true if the size of the list is 1.
      */
