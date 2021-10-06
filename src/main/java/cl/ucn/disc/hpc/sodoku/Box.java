@@ -91,8 +91,8 @@ public class Box {
      * Cleans the rows of the box using Elimination technique.
      * @return true if any change was made.
      */
-    private boolean SimpleEliminationRow(){
-        int changes = 0;
+    public boolean SimpleEliminationRow(){
+        boolean anyChange = false;
         // Loop through the box rows
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
             for (int j = 0; j < cells.length; j++){
@@ -118,18 +118,18 @@ public class Box {
                         // If the value was unique we clean the other possible values from the cell
                         if (isUnique){
                             cell.RemovePossibleValuesExceptOne(value);
-                            changes++;
+                            anyChange = true;
                             break;
                         }
                     }
                 }
             }
         }
-        return changes > 0;
+        return anyChange;
     }
 
-    private boolean SimpleEliminationColumn(){
-        int changes = 0;
+    public boolean SimpleEliminationColumn(){
+        boolean anyChange = false;
         // Loop through the box rows
         for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
             for (int i = 0; i < cells.length; i++){
@@ -155,14 +155,14 @@ public class Box {
                         // If the value was unique we clean the other possible values from the cell
                         if (isUnique){
                             cell.RemovePossibleValuesExceptOne(value);
-                            changes++;
+                            anyChange = true;
                             break;
                         }
                     }
                 }
             }
         }
-        return changes > 0;
+        return anyChange;
     }
 
     /**
@@ -170,7 +170,7 @@ public class Box {
      * @return true if any change was made.
      */
     public boolean SimpleEliminationBox(){
-        int changes = 0;
+        boolean anyChange = false;
         // Loop through the box rows
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
             for (int j = xFromTo[0]; j < xFromTo[1]; j++){
@@ -199,14 +199,14 @@ public class Box {
                         // If the value was unique we clean the other possible values from the cell
                         if (isUnique){
                             cell.RemovePossibleValuesExceptOne(value);
-                            changes++;
+                            anyChange = true;
                             break;
                         }
                     }
                 }
             }
         }
-        return changes > 0;
+        return anyChange;
     }
 
     /**

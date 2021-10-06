@@ -153,7 +153,19 @@ public class Sodoku {
             if (IsTheSodokuSolved()){
                 return true;
             }
-            // If we use simple elimination technique and  a change occurs
+            // If we use simple elimination technique int the rows and a change occurs
+            if (SimpleEliminationByRows()){
+                // We back to the top of the loop
+                log.debug("A change was made by simple elimination by rows:");
+                continue;
+            }
+            // If we use simple elimination technique int the columns and a change occurs
+            if (SimpleEliminationByColumns()){
+                // We back to the top of the loop
+                log.debug("A change was made by simple elimination by columns:");
+                continue;
+            }
+            // If we use simple elimination technique in the boxes and a change occurs
             if (SimpleEliminationByBox()){
                 // We back to the top of the loop
                 log.debug("A change was made by simple elimination by box:");
@@ -241,6 +253,67 @@ public class Sodoku {
         return anyChange.get();
     }
 
+    /**
+     * Parallel simple elimination for each row in the sudoku
+     * @return true if any change was made
+     */
+    private boolean SimpleEliminationByRows(){
+        AtomicBoolean anyChange = new AtomicBoolean(false);
+        ExecutorService executorService = Executors.newFixedThreadPool(cores);
+        // We only need to loop through N boxes, where N is the length of boxes matrix
+        for (int i = 0; i < boxes.length; i++){
+            final int row = i;
+            executorService.submit(() ->{
+                Box box = boxes[row][0];
+                if (box.SimpleEliminationRow()){
+                    anyChange.compareAndSet(false, true);
+                }
+            });
+        }
+        // wait for threads to end
+        executorService.shutdown();
+        try{
+            if (executorService.awaitTermination(maxTime, TimeUnit.MINUTES)){
+                executorService.shutdown();
+            }
+        }catch (InterruptedException e){
+            executorService.shutdown();
+            log.warn("Error in simple elimination box threads!");
+        }
+
+        return anyChange.get();
+    }
+
+    /**
+     * Parallel simple elimination for each column in the sudoku
+     * @return true if any change was made
+     */
+    private boolean SimpleEliminationByColumns(){
+        AtomicBoolean anyChange = new AtomicBoolean(false);
+        ExecutorService executorService = Executors.newFixedThreadPool(cores);
+        // We only need to loop through N boxes, where N is the length of boxes matrix
+        for (int j = 0; j < boxes.length; j++){
+            final int column = j;
+            executorService.submit(() ->{
+                Box box = boxes[0][column];
+                if (box.SimpleEliminationColumn()){
+                    anyChange.compareAndSet(false, true);
+                }
+            });
+        }
+        // wait for threads to end
+        executorService.shutdown();
+        try{
+            if (executorService.awaitTermination(maxTime, TimeUnit.MINUTES)){
+                executorService.shutdown();
+            }
+        }catch (InterruptedException e){
+            executorService.shutdown();
+            log.warn("Error in simple elimination box threads!");
+        }
+
+        return anyChange.get();
+    }
 
 
     /**
