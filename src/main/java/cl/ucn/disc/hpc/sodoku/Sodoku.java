@@ -1,18 +1,27 @@
 package cl.ucn.disc.hpc.sodoku;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.time.StopWatch;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This class represents a sodoku.
  */
 @Slf4j
 public class Sodoku {
-    // A matrix with the cells of the sodoku
+    // Number of cores that are going to be used to solve the sudoku
+    private final int cores = 4;
+    // Max time in minutes to wait for the threads
+    private final int maxTime = 5;
+    // A matrix with the cells of the sudoku
     private final Cell[][] cells;
-    // A matrix with the boxes of the sodoku
+    // A matrix with the boxes of the sudoku
     private final Box[][] boxes;
 
     /**
@@ -133,58 +142,106 @@ public class Sodoku {
         }
     }
 
-    public void Solve(){
-        int securityAttempts = 600;
-        while (securityAttempts > 0){
-            boolean simpleElimination = SimpleElimination();
+    /**
+     * Try to solve the sudoku
+     * @return true if the sudoku was solved
+     */
+    public boolean Solve(){
+        while(true){
+            PrintCells();
+            // Is the sudoku solved?
             if (IsTheSodokuSolved()){
-                log.debug("Attempts : {}", 600 - securityAttempts);
-                return;
+                return true;
             }
-            if (simpleElimination){
-                securityAttempts--;
+            // If we use simple elimination technique and  a change occurs
+            if (SimpleEliminationByBox()){
+                // We back to the top of the loop
+                log.debug("A change was made by simple elimination by box:");
                 continue;
             }
-            boolean longRangerElimination = LoneRangerElimination();
-            if (IsTheSodokuSolved()){
-                log.debug("Attempts : {}", 600 - securityAttempts);
-                return;
-            }
-            if (longRangerElimination){
-                securityAttempts--;
-                continue;
-            }
-            boolean twinsElimination = TwinsElimination();
-            if (IsTheSodokuSolved()){
-                log.debug("Attempts : {}", 600 - securityAttempts);
-                return;
-            }
-            if (twinsElimination){
-                securityAttempts--;
-                continue;
-            }else{
-                log.debug("Attempts : {}", 600 - securityAttempts);
-                return;
-            }
+            // If we cannot make any change we solve the sudoku by brute force
+            break;
         }
-        log.warn("Takes all attempts!!!");
+        return false;
     }
 
     /**
-     * Check if the sodoku is solved.
+     * Parallel check if the sodoku is solved.
      * @return true if the sodoku is solved.
      */
     public boolean IsTheSodokuSolved(){
+        AtomicBoolean isSolved = new AtomicBoolean(true);
+        ExecutorService executorService = Executors.newFixedThreadPool(cores);
+
+        log.debug("Checking if the sodoku is solved");
+        StopWatch sw = StopWatch.createStarted();
+
+        // Loop through the boxes
         for (int i = 0; i < boxes.length; i++){
             for (int j = 0; j < boxes.length; j++){
-                Box box = boxes[i][j];
-                if (!box.IsThisBoxValid()){
-                    return false;
-                }
+                final int row = i;
+                final int column = j;
+                // Use a thread to check if this box is valid
+                executorService.submit(() -> {
+                    Box box = boxes[row][column];
+                    if (!box.IsThisBoxValid()){
+                        isSolved.compareAndSet(true, false);
+                    }
+                });
             }
         }
-        return  true;
+        // wait for threads to end
+        executorService.shutdown();
+        try{
+            if (executorService.awaitTermination(maxTime, TimeUnit.MINUTES)){
+                executorService.shutdown();
+            }
+        }catch (InterruptedException e){
+            executorService.shutdown();
+            log.warn("Error in check valid box threads!");
+        }
+
+        log.debug("Finished in {} ms!" + "\n", sw.getTime(TimeUnit.MILLISECONDS));
+
+        return isSolved.get();
     }
+
+    /**
+     * Parallel simple elimination for each box in the sudoku.
+     * @return true if any change was made.
+     */
+    private boolean SimpleEliminationByBox(){
+        AtomicBoolean anyChange = new AtomicBoolean(false);
+        ExecutorService executorService = Executors.newFixedThreadPool(cores);
+        // Loop through the boxes
+        for (int i = 0; i < boxes.length; i++){
+            for (int j = 0; j < boxes.length; j++){
+                final int row = i;
+                final int column = j;
+                // Use a thread to use simple elimination technique in the box
+                executorService.submit(() -> {
+                    Box box = boxes[row][column];
+                    if (box.SimpleEliminationBox()){
+                        anyChange.compareAndSet(false, true);
+                    }
+                });
+            }
+        }
+        // wait for threads to end
+        executorService.shutdown();
+        try{
+            if (executorService.awaitTermination(maxTime, TimeUnit.MINUTES)){
+                executorService.shutdown();
+            }
+        }catch (InterruptedException e){
+            executorService.shutdown();
+            log.warn("Error in simple elimination box threads!");
+        }
+
+        return anyChange.get();
+    }
+
+
 
     /**
      * Elimination technique.
@@ -200,6 +257,9 @@ public class Sodoku {
                     changes++;
                 }
             }
+        }
+        if (changes > 0){
+            return true;
         }
         // Then, we clean the rows and columns
         for (int i = 0; i < boxes.length; i++){
@@ -228,6 +288,9 @@ public class Sodoku {
                 }
             }
         }
+        if (changes > 0){
+            return true;
+        }
         // Then, we clean the rows and columns
         for (int i = 0; i < boxes.length; i++){
             for (int j = 0; j < boxes.length; j++){
@@ -254,7 +317,11 @@ public class Sodoku {
                     changes++;
                 }
             }
+        }/*
+        if (changes > 0){
+            return true;
         }
+
         // Then we clean the rows and columns
         for (int i = 0; i < boxes.length; i++){
             for (int j = 0; j < boxes.length; j++){
@@ -263,11 +330,52 @@ public class Sodoku {
                     changes++;
                 }
             }
-        }
+        }*/
         return  changes > 0;
+    }
+
+    /**
+     * Triplets elimination technique.
+     * @return true if a change was made.
+     */
+    public boolean TripletsElimination(){
+        int changes = 0;
+        // First we need to clean the boxes
+        for (int i = 0; i < boxes.length; i++){
+            for (int j = 0; j < boxes.length; j++){
+                Box box = boxes[i][j];
+                if (box.TripletsBox()){
+                    changes++;
+                }
+            }
+        }
+        if (changes > 0){
+            return true;
+        }
+        // Then, we clean the rows and columns
+        for (int i = 0; i < boxes.length; i++){
+            for (int j = 0; j < boxes.length; j++){
+                Box box = boxes[i][j];
+                if(box.Triplets()){
+                    changes++;
+                }
+            }
+        }
+        return changes > 0;
     }
 
     public Cell[][] GetCells(){
         return this.cells;
+    }
+
+    public void PrintCells(){
+        for (int i = 0; i < cells.length; i++){
+            List<List<Integer>> row = new ArrayList<>();
+            for (int j = 0; j < cells.length; j++){
+                row.add(cells[i][j].GetPossibleValues());
+            }
+            log.debug("{}", row);
+        }
+        log.debug("");
     }
 }
