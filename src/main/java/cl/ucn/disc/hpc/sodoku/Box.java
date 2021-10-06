@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
 /**
  * Represent a box of n cells in the sodoku.
@@ -172,7 +173,7 @@ public class Box {
         int changes = 0;
         // Loop through the box rows
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
-            for (int j = 0; j < cells.length; j++){
+            for (int j = xFromTo[0]; j < xFromTo[1]; j++){
                 //For each cell in the row, we must verify if for any of its possible values it is the only valid cell
                 Cell cell = cells[i][j];
                 if (!cell.GetIsByDefault() && !cell.HasOnlyOnePossibleValue()){
@@ -337,7 +338,7 @@ public class Box {
                                 }
                             }
                         }
-                        // Do we need to clean the both cells
+                        // Do we need to clean the both cells?
                         if (isValid){
                             cell.RemovePossibleValuesExceptPair(pairs.get(k));
                             candidate.RemovePossibleValuesExceptPair(pairs.get(k));
@@ -385,7 +386,7 @@ public class Box {
                                 }
                             }
                         }
-                        // Do we need to clean the both cells
+                        // Do we need to clean the both cells?
                         if (isValid){
                             cell.RemovePossibleValuesExceptPair(pairs.get(k));
                             candidate.RemovePossibleValuesExceptPair(pairs.get(k));
@@ -437,10 +438,169 @@ public class Box {
                                 }
                             }
                         }
-                        // Do we need to clean the both cells
+                        // Do we need to clean the both cells?
                         if (isValid){
                             cell.RemovePossibleValuesExceptPair(pairs.get(k));
                             candidate.RemovePossibleValuesExceptPair(pairs.get(k));
+                            changes++;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return changes > 0;
+    }
+
+    /**
+     * Uses Triplets' technique to clean the rows or columns
+     * @return true if a change was made.
+     */
+    public boolean Triplets(){
+        if (this.toEvaluate == ToEvaluate.Row){
+            return TripletsRow();
+        }
+        else if (this.toEvaluate == ToEvaluate.Column){
+            return TripletsColumn();
+        }
+        return false;
+    }
+
+    /**
+     * Clean the rows of the box using Triplets' technique
+     * @return true if a change was made.
+     */
+    private boolean TripletsRow(){
+        int changes = 0;
+        // Loop through the box cells
+        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = 0; j < cells.length; j++){
+                // We are looking for a not default cell with four or more possible values
+                Cell cell = cells[i][j];
+                if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 4){
+                    List<Integer[]> triplets = cell.GetUniqueTriplets();
+                    for (int k = 0; k < triplets.size(); k++){
+                        // We need to check if only one candidate cell was found
+                        Stack<Cell> toChange = new Stack<>();
+                        toChange.add(cell);
+                        for (int h = 0; h < cells.length; h++){
+                            // We omit the main cell
+                            if (h == j){
+                                continue;
+                            }
+                            // Is this a valid candidate?
+                            Cell temp = cells[i][h];
+                            if (!temp.GetIsByDefault() && temp.GetPossibleValues().size() >= 3 && temp.HasTriplet(triplets.get(k))){
+                                toChange.add(temp);
+                                if (toChange.size() > 3){
+                                    break;
+                                }
+                            }
+                        }
+                        // Do we need to clean the both cells?
+                        if (toChange.size() == 3){
+                            while (!toChange.empty()){
+                                Cell temp = toChange.pop();
+                                temp.RemovePossibleValuesExceptTriplet(triplets.get(k));
+                            }
+                            changes++;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return changes > 0;
+    }
+
+    /**
+     * Clean the columns of the box using Triplets' technique
+     * @return true if a change was made.
+     */
+    private boolean TripletsColumn(){
+        int changes = 0;
+        // Loop through the box cells
+        for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+            for (int i = 0; i < cells.length; i++){
+                // We are looking for a not default cell with four or more possible values
+                Cell cell = cells[i][j];
+                if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 4){
+                    List<Integer[]> triplets = cell.GetUniqueTriplets();
+                    for (int k = 0; k < triplets.size(); k++){
+                        // We need to check if only one candidate cell was found
+                        Stack<Cell> toChange = new Stack<>();
+                        toChange.add(cell);
+                        for (int h = 0; h < cells.length; h++){
+                            // We omit the main cell
+                            if (h == i){
+                                continue;
+                            }
+                            // Is this a valid candidate?
+                            Cell temp = cells[h][j];
+                            if (!temp.GetIsByDefault() && temp.GetPossibleValues().size() >= 3 && temp.HasTriplet(triplets.get(k))){
+                                toChange.add(temp);
+                                if (toChange.size() > 3){
+                                    break;
+                                }
+                            }
+                        }
+                        // Do we need to clean the both cells?
+                        if (toChange.size() == 3){
+                            while (!toChange.empty()){
+                                Cell temp = toChange.pop();
+                                temp.RemovePossibleValuesExceptTriplet(triplets.get(k));
+                            }
+                            changes++;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return changes > 0;
+    }
+
+    /**
+     * Clean the box using Twins' technique
+     * @return true if a change was made.
+     */
+    public boolean TripletsBox(){
+        int changes = 0;
+        // Loop through the box cells
+        for(int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                // We are looking for a not default cell with three or more possible values
+                Cell cell = cells[i][j];
+                if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 3){
+                    List<Integer[]> triplets = cell.GetUniqueTriplets();
+                    for (int k = 0; k < triplets.size(); k++){
+                        // We need to check if only one candidate cell was found
+                        Stack<Cell> toChange = new Stack<>();
+                        toChange.add(cell);
+                        // We use a label to break the inner loop
+                        find :
+                        for (int l = yFromTo[0]; l <= yFromTo[1]; l++){
+                            for(int m = xFromTo[0]; m <= xFromTo[1]; m++){
+                                // We omit the main cell
+                                if (l == i && m == j){
+                                    continue;
+                                }
+                                // Is this a valid candidate?
+                                Cell temp = cells[l][m];
+                                if (!temp.GetIsByDefault() && temp.GetPossibleValues().size() >= 3 && temp.HasTriplet(triplets.get(k))){
+                                    toChange.add(temp);
+                                    if (toChange.size() > 3){
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        // Do we need to clean the both cells
+                        if (toChange.size() == 3){
+                            while (!toChange.empty()){
+                                Cell temp = toChange.pop();
+                                temp.RemovePossibleValuesExceptTriplet(triplets.get(k));
+                            }
                             changes++;
                             break;
                         }
