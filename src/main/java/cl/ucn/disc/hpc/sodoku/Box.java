@@ -11,20 +11,8 @@ import java.util.Stack;
  */
 @Slf4j
 public class Box {
-
-    /**
-     * A box can evaluate rows, columns or neither.
-     */
-    public enum ToEvaluate{
-        Row,
-        Column,
-        None
-    }
-
     // The matrix with the cells to evaluate
     private final Cell[][] cells;
-    // A box can evaluate rows, columns or neither
-    private final ToEvaluate toEvaluate;
     // The indexes covered by this box on the x-axis
     private final Integer[] xFromTo;
     // The indexes covered by this box on the y-axis
@@ -33,15 +21,13 @@ public class Box {
     /**
      * The constructor of a box.
      * @param cells the matrix with the cells of hte sodoku.
-     * @param toEvaluate what is this box going to evaluate?
      * @param xFrom min x index.
      * @param xTo max x index.
      * @param yFrom min y index.
      * @param yTo max y index.
      */
-    public Box(Cell[][] cells,ToEvaluate toEvaluate, int xFrom, int xTo, int yFrom, int yTo){
+    public Box(Cell[][] cells, int xFrom, int xTo, int yFrom, int yTo){
         this.cells = cells;
-        this.toEvaluate = toEvaluate;
         this.xFromTo = new Integer[]{xFrom, xTo};
         this.yFromTo = new Integer[]{yFrom, yTo};
     }
@@ -70,21 +56,6 @@ public class Box {
             }
         }
         return true;
-    }
-
-    /**
-     * Uses Elimination technique to clean the rows or columns.
-     * @return true if a change was made.
-     */
-    public boolean SimpleEliminationRowsColumns(){
-        // A box can only evaluate its rows or columns at once
-        if (this.toEvaluate == ToEvaluate.Row){
-            return SimpleEliminationRow();
-        }
-        else if (this.toEvaluate == ToEvaluate.Column){
-            return SimpleEliminationColumn();
-        }
-        return false;
     }
 
     /**
@@ -210,25 +181,10 @@ public class Box {
     }
 
     /**
-     * Uses Lone Rangers' technique to clean the rows or columns
-     * @return true if a change was made.
-     */
-    public boolean LoneRangersRowsColumns(){
-        // A box can only evaluate its rows or columns at once
-        if (this.toEvaluate == ToEvaluate.Row){
-            return LoneRangersRow();
-        }
-        else if (this.toEvaluate == ToEvaluate.Column){
-            return LoneRangersColumn();
-        }
-        return false;
-    }
-
-    /**
      * Clean the rows of the box using Lone Rangers' technique
      * @return true if a change was made.
      */
-    private boolean LoneRangersRow(){
+    public boolean LoneRangersRow(){
         int changes = 0;
         // Loop through the box rows
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
@@ -250,8 +206,8 @@ public class Box {
      * Clean the columns of the box using Lone Rangers' technique
      * @return true if a change was made.
      */
-    private boolean LoneRangersColumn(){
-        int changes = 0;
+    public boolean LoneRangersColumn(){
+        boolean anyChange = false;
         // Loop through the box columns
         for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
             for (int i = 0; i < cells.length; i++){
@@ -260,12 +216,12 @@ public class Box {
                 if (!cell.GetIsByDefault() && cell.HasOnlyOnePossibleValue()){
                     // Clean the column
                     if (CleanPossibleValuesInColumn(cell.GetFirstPossibleValue(), j, i)){
-                        changes++;
+                        anyChange = true;
                     }
                 }
             }
         }
-        return changes > 0;
+        return anyChange;
     }
 
     /**
@@ -273,7 +229,7 @@ public class Box {
      * @return true if a change was made.
      */
     public boolean LoneRangersBox(){
-        int changes = 0;
+        boolean anyChange = false;
         // Loop through the box cells
         for(int i = yFromTo[0]; i <= yFromTo[1]; i++){
             for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
@@ -282,26 +238,12 @@ public class Box {
                 if (!cell.GetIsByDefault() && cell.HasOnlyOnePossibleValue()){
                     // Clean the box
                     if (CleanPossibleValueInBox(cell.GetFirstPossibleValue(), cell)){
-                        changes++;
+                        anyChange = true;
                     }
                 }
             }
         }
-        return changes > 0;
-    }
-
-    /**
-     * Uses Twins' technique to clean the rows or columns
-     * @return true if a change was made.
-     */
-    public boolean Twins(){
-        if (this.toEvaluate == ToEvaluate.Row){
-            return TwinsRow();
-        }
-        else if (this.toEvaluate == ToEvaluate.Column){
-            return TwinsColumn();
-        }
-        return false;
+        return anyChange;
     }
 
     /**
@@ -453,20 +395,6 @@ public class Box {
     }
 
     /**
-     * Uses Triplets' technique to clean the rows or columns
-     * @return true if a change was made.
-     */
-    public boolean Triplets(){
-        if (this.toEvaluate == ToEvaluate.Row){
-            return TripletsRow();
-        }
-        else if (this.toEvaluate == ToEvaluate.Column){
-            return TripletsColumn();
-        }
-        return false;
-    }
-
-    /**
      * Clean the rows of the box using Triplets' technique
      * @return true if a change was made.
      */
@@ -590,7 +518,7 @@ public class Box {
                                 if (!temp.GetIsByDefault() && temp.GetPossibleValues().size() >= 3 && temp.HasTriplet(triplets.get(k))){
                                     toChange.add(temp);
                                     if (toChange.size() > 3){
-                                        break;
+                                        break find;
                                     }
                                 }
                             }
@@ -637,18 +565,18 @@ public class Box {
      * @return true if the value was removed from any of the cells.
      */
     public boolean CleanPossibleValuesInRow(int value, int row, int cellToSkipColumn){
-        int changes = 0;
+        boolean anyChange = false;
         // Loop through the row
         for (int j = 0; j < cells.length; j++){
             // Check if we must skip the cell
             if (j != cellToSkipColumn){
                 Cell cell = cells[row][j];
                 if (cell.RemovePossibleValue(value)){
-                    changes++;
+                    anyChange = true;
                 }
             }
         }
-        return changes > 0;
+        return anyChange;
     }
 
     /**
@@ -659,18 +587,18 @@ public class Box {
      * @return true if the value was removed from any of the cells.
      */
     public boolean CleanPossibleValuesInColumn(int value, int column, int cellToSkipRow){
-        int changes = 0;
+        boolean anyChange = false;
         // Loop through the column
         for (int i = 0; i < cells.length; i++){
             // Check if we must skip the cell
             if (i != cellToSkipRow){
                 Cell cell = cells[i][column];
                 if(cell.RemovePossibleValue(value)){
-                    changes++;
+                    anyChange = true;
                 }
             }
         }
-        return changes > 0;
+        return anyChange;
     }
 
     /**
