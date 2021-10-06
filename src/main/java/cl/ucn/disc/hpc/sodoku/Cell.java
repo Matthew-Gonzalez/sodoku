@@ -117,6 +117,15 @@ public class Cell {
     }
 
     /**
+     * Given a triplet remove all possible values except that triplet.
+     * @param triplet the triplet.
+     */
+    public void RemovePossibleValuesExceptTriplet(Integer[] triplet){
+        List<Integer> tripletAstList = Arrays.asList(triplet);
+        possibleValues.retainAll(tripletAstList);
+    }
+
+    /**
      * Check if there is only one possible value.
      * @return true if the size of the list is 1.
      */
@@ -157,16 +166,46 @@ public class Cell {
         List<Integer[]> pairs = new ArrayList<>();
         for (int i = 0; i < this.possibleValues.size() - 1; i++){
             for (int j = i + 1; j < this.possibleValues.size(); j++){
-                Integer[] temp = {this.possibleValues.get(i),this.possibleValues.get(j)};
-                pairs.add(temp);
+                Integer[] pair = {this.possibleValues.get(i),this.possibleValues.get(j)};
+                pairs.add(pair);
             }
         }
         return pairs;
     }
 
-
+    /**
+     * Check if the cell contains all values of a given pair.
+     * @param pair the pair.
+     * @return true if the cell contains all value of the pair.
+     */
     public boolean HasPair(Integer[] pair){
-        return this.possibleValues.contains(pair[0]) && this.possibleValues.contains(pair[1]);
+        List<Integer> pairAsList = Arrays.asList(pair);
+        return this.possibleValues.containsAll(pairAsList);
+    }
+
+    /**
+     * Get a list with the unique triplets between the possible values for the cell
+     * @return a list of arrays where each array is a pair.
+     */
+    public List<Integer[]> GetUniqueTriplets(){
+        List<Integer[]> triplets = new ArrayList<>();
+        for (int i = 0; i < this.possibleValues.size() - 2; i++){
+            for (int j = i + 2; j < this.possibleValues.size(); j++){
+                Integer[] triplet = {this.possibleValues.get(i), this.possibleValues.get(i + 1), this.possibleValues.get(j)};
+                triplets.add(triplet);
+            }
+        }
+        return triplets;
+    }
+
+    /**
+     * Check if the cell contains all values of a given triplet.
+     * @param triplet the triplet.
+     * @return true if the cell contains all value of the triplet.
+     */
+    public boolean HasTriplet(Integer[] triplet){
+        List<Integer> tripletAsList = Arrays.asList(triplet);
+        return this.possibleValues.containsAll(tripletAsList);
     }
 
     /**
