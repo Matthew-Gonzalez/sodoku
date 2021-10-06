@@ -58,117 +58,66 @@ public class Box {
         return true;
     }
 
-    /**
-     * Cleans the rows of the box using Elimination technique.
-     * @return true if any change was made.
-     */
-    public boolean SimpleEliminationRow(){
-        boolean anyChange = false;
-        // Loop through the box rows
+    public boolean AreTheBoxRowsValid(){
+        // Loop through the cells
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
-            for (int j = 0; j < cells.length; j++){
-                //For each cell in the row, we must verify if for any of its possible values it is the only valid cell
+            List<Integer> values = new ArrayList<>();
+            for (int j = 0; j <= cells.length; j++){
                 Cell cell = cells[i][j];
-                if (!cell.GetIsByDefault() && !cell.HasOnlyOnePossibleValue()){
-                    for (int k = 0; k < cell.GetPossibleValues().size(); k++){
-                        int value = cell.GetPossibleValues().get(k);
-                        boolean isUnique = true;
-                        // We loop through the row again
-                        for (int h = 0; h < cells.length; h++){
-                            // We omit the main cell
-                            if (h == j){
-                                continue;
-                            }
-                            Cell temp = cells[i][h];
-                            // If the value is not unique in the row
-                            if (temp.HasPossibleValue(value)){
-                                isUnique = false;
-                                break;
-                            }
-                        }
-                        // If the value was unique we clean the other possible values from the cell
-                        if (isUnique){
-                            cell.RemovePossibleValuesExceptOne(value);
-                            anyChange = true;
-                            break;
-                        }
-                    }
+                // Check if the cell has only one possible value
+                if (!cell.HasOnlyOnePossibleValue()){
+                    return false;
                 }
+                // Check if the value is repeated
+                int value = cell.GetFirstPossibleValue();
+                if (values.contains(value)){
+                    log.warn("A row with the cell[{}][{}] has a repeated value", i, j);
+                    return false;
+                }
+                values.add(value);
             }
         }
-        return anyChange;
+        return true;
     }
 
-    public boolean SimpleEliminationColumn(){
-        boolean anyChange = false;
-        // Loop through the box rows
+    public boolean AreTheBoxColumnsValid(){
+        // Loop through the cells
         for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
-            for (int i = 0; i < cells.length; i++){
-                //For each cell in the row, we must verify if for any of its possible values it is the only valid cell
+            List<Integer> values = new ArrayList<>();
+            for (int i = 0; i <= cells.length; i++){
                 Cell cell = cells[i][j];
-                if (!cell.GetIsByDefault() && !cell.HasOnlyOnePossibleValue()){
-                    for (int k = 0; k < cell.GetPossibleValues().size(); k++){
-                        int value = cell.GetPossibleValues().get(k);
-                        boolean isUnique = true;
-                        // We loop through the columns again
-                        for (int h = 0; h < cells.length; h++){
-                            // We omit the main cell
-                            if (h == i){
-                                continue;
-                            }
-                            Cell temp = cells[h][j];
-                            // If the value is not unique in the row
-                            if (temp.HasPossibleValue(value)){
-                                isUnique = false;
-                                break;
-                            }
-                        }
-                        // If the value was unique we clean the other possible values from the cell
-                        if (isUnique){
-                            cell.RemovePossibleValuesExceptOne(value);
-                            anyChange = true;
-                            break;
-                        }
-                    }
+                // Check if the cell has only one possible value
+                if (!cell.HasOnlyOnePossibleValue()){
+                    return false;
                 }
+                // Check if the value is repeated
+                int value = cell.GetFirstPossibleValue();
+                if (values.contains(value)){
+                    log.warn("A column with the cell[{}][{}] has a repeated value", i, j);
+                    return false;
+                }
+                values.add(value);
             }
         }
-        return anyChange;
+        return true;
     }
 
     /**
-     * Cleans the box using Elimination technique.
+     * Cleans the box using simple elimination technique.
      * @return true if any change was made.
      */
-    public boolean SimpleEliminationBox(){
+    public boolean SimpleElimination(){
         boolean anyChange = false;
-        // Loop through the box rows
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
             for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
-                //For each cell in the row, we must verify if for any of its possible values it is the only valid cell
                 Cell cell = cells[i][j];
+                // If the cell is not default and has multiple possible values
                 if (!cell.GetIsByDefault() && !cell.HasOnlyOnePossibleValue()){
-                    for (int k = 0; k < cell.GetPossibleValues().size(); k++){
+                    for(int k = 0; k < cell.GetPossibleValues().size(); k++){
                         int value = cell.GetPossibleValues().get(k);
-                        boolean isUnique = true;
-                        // We loop through the row again. We use a label to break the inner loop
-                        find :
-                        for (int l = yFromTo[0]; l <= yFromTo[1]; l++){
-                            for(int m = xFromTo[0]; m <= xFromTo[1]; m++){
-                                // We omit the main cell
-                                if (l == i && m == j){
-                                    continue;
-                                }
-                                Cell temp = cells[l][m];
-                                // If the value is not unique in the row
-                                if (temp.HasPossibleValue(value)){
-                                    isUnique = false;
-                                    break find;
-                                }
-                            }
-                        }
-                        // If the value was unique we clean the other possible values from the cell
-                        if (isUnique){
+                        if (IsThisValueUniqueInBox(value, i, j) && IsThisValueUniqueInRow(value, i, j)
+                                && IsThisValueUniqueInColumn(value, j, i)){
+                            // This value is unique in its box, row and column, so we remove the other possible values
                             cell.RemovePossibleValuesExceptOne(value);
                             anyChange = true;
                             break;
@@ -181,41 +130,20 @@ public class Box {
     }
 
     /**
-     * Clean the rows of the box using Lone Rangers' technique
+     * Clean the box using loner rangers technique.
      * @return true if a change was made.
      */
-    public boolean LoneRangersRow(){
-        int changes = 0;
-        // Loop through the box rows
-        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
-            for (int j = 0; j < cells.length; j++){
-                // We are looking for a not default cell with only one possible value
-                Cell cell = cells[i][j];
-                if (!cell.GetIsByDefault() && cell.HasOnlyOnePossibleValue()){
-                    // Clean the row
-                    if(CleanPossibleValuesInRow(cell.GetFirstPossibleValue(), i, j)){
-                        changes++;
-                    }
-                }
-            }
-        }
-        return changes > 0;
-    }
-
-    /**
-     * Clean the columns of the box using Lone Rangers' technique
-     * @return true if a change was made.
-     */
-    public boolean LoneRangersColumn(){
+    public boolean LonerRangers(){
         boolean anyChange = false;
-        // Loop through the box columns
-        for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
-            for (int i = 0; i < cells.length; i++){
+        for(int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
                 // We are looking for a not default cell with only one possible value
                 Cell cell = cells[i][j];
                 if (!cell.GetIsByDefault() && cell.HasOnlyOnePossibleValue()){
-                    // Clean the column
-                    if (CleanPossibleValuesInColumn(cell.GetFirstPossibleValue(), j, i)){
+                    // Clean the box, row and column
+                    int value = cell.GetFirstPossibleValue();
+                    if (CleanPossibleValueInBox(value, cell) || CleanPossibleValuesInRow(value, i, j)
+                            || CleanPossibleValuesInColumn(value, j, i)){
                         anyChange = true;
                     }
                 }
@@ -225,173 +153,50 @@ public class Box {
     }
 
     /**
-     * Clean the box using Lone Rangers' technique
-     * @return true if a change was made.
+     * Clean the box using twins technique.
+     * @return true if any change was made.
      */
-    public boolean LoneRangersBox(){
+    public boolean Twins(){
         boolean anyChange = false;
         // Loop through the box cells
         for(int i = yFromTo[0]; i <= yFromTo[1]; i++){
             for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
-                // We are looking for a not default cell with only one possible value
+                // We are looking for a not default cell with three or more possible values
                 Cell cell = cells[i][j];
-                if (!cell.GetIsByDefault() && cell.HasOnlyOnePossibleValue()){
-                    // Clean the box
-                    if (CleanPossibleValueInBox(cell.GetFirstPossibleValue(), cell)){
-                        anyChange = true;
+                if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 3){
+                    List<Integer[]> pairs = cell.GetUniquePairs();
+                    for (int k = 0; k < pairs.size(); k++){
+                        Integer[] pair = pairs.get(k);
+                        Stack<Cell> toClean = new Stack<>();
+                        toClean.add(cell);
+                        // If this pair only exist twice in the box
+                        Cell inBox = IsThisPairOnyTwiceInBox(pair, cell);
+                        if (inBox != null){
+                            toClean.add(inBox);
+                        }
+                        // If this pair only exist twice in the row
+                        Cell inRow = IsThisPairOnlyTwiceInRow(pair, i, cell);
+                        if (inRow != null){
+                            toClean.add(inRow);
+                        }
+                        // If this pair only exist twice in the column
+                        Cell inColumn = IsThisPairOnlyTwiceInColumn(pair, j, cell);
+                        if (inColumn != null){
+                            toClean.add(inColumn);
+                        }
+                        if (toClean.size() >= 2){
+                            while (!toClean.empty()){
+                                Cell temp = toClean.pop();
+                                temp.RemovePossibleValuesExceptPair(pair);
+                            }
+                            anyChange = true;
+                            break;
+                        }
                     }
                 }
             }
         }
         return anyChange;
-    }
-
-    /**
-     * Clean the rows of the box using Twins' technique
-     * @return true if a change was made.
-     */
-    private boolean TwinsRow(){
-        int changes = 0;
-        // Loop through the box cells
-        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
-            for (int j = 0; j < cells.length; j++){
-                // We are looking for a not default cell with three or more possible values
-                Cell cell = cells[i][j];
-                if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 3){
-                    List<Integer[]> pairs = cell.GetUniquePairs();
-                    for (int k = 0; k < pairs.size(); k++){
-                        // We need to check if only one candidate cell was found
-                        Cell candidate = null;
-                        boolean isValid = false;
-                        for (int h = 0; h < cells.length; h++){
-                            // We omit the main cell
-                            if (h == j){
-                                continue;
-                            }
-                            // Is this a valid candidate?
-                            Cell temp = cells[i][h];
-                            if (!temp.GetIsByDefault() && temp.GetPossibleValues().size() >= 3 && temp.HasPair(pairs.get(k))){
-                                if (candidate != null){
-                                    isValid = false;
-                                    break;
-                                }else{
-                                    candidate = temp;
-                                    isValid = true;
-                                }
-                            }
-                        }
-                        // Do we need to clean the both cells?
-                        if (isValid){
-                            cell.RemovePossibleValuesExceptPair(pairs.get(k));
-                            candidate.RemovePossibleValuesExceptPair(pairs.get(k));
-                            changes++;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        return changes > 0;
-    }
-
-    /**
-     * Clean the columns of the box using Twins' technique
-     * @return true if a change was made.
-     */
-    private boolean TwinsColumn(){
-        int changes = 0;
-        // Loop through the box cells
-        for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
-            for (int i = 0; i < cells.length; i++){
-                // We are looking for a not default cell with three or more possible values
-                Cell cell = cells[i][j];
-                if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 3){
-                    List<Integer[]> pairs = cell.GetUniquePairs();
-                    for (int k = 0; k < pairs.size(); k++){
-                        // We need to check if only one candidate cell was found
-                        Cell candidate = null;
-                        boolean isValid = false;
-                        for (int h = 0; h < cells.length; h++){
-                            // We omit the main cell
-                            if (h == i){
-                                continue;
-                            }
-                            // Is this a valid candidate?
-                            Cell temp = cells[i][h];
-                            if (!temp.GetIsByDefault() && temp.GetPossibleValues().size() >= 3 && temp.HasPair(pairs.get(k))){
-                                if (candidate != null){
-                                    isValid = false;
-                                    break;
-                                }else{
-                                    candidate = temp;
-                                    isValid = true;
-                                }
-                            }
-                        }
-                        // Do we need to clean the both cells?
-                        if (isValid){
-                            cell.RemovePossibleValuesExceptPair(pairs.get(k));
-                            candidate.RemovePossibleValuesExceptPair(pairs.get(k));
-                            changes++;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        return changes > 0;
-    }
-
-    /**
-     * Clean the box using Twins' technique
-     * @return true if a change was made.
-     */
-    public boolean TwinsBox(){
-        int changes = 0;
-        // Loop through the box cells
-        for(int i = yFromTo[0]; i <= yFromTo[1]; i++){
-            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
-                // We are looking for a not default cell with three or more possible values
-                Cell cell = cells[i][j];
-                if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 3){
-                    List<Integer[]> pairs = cell.GetUniquePairs();
-                    for (int k = 0; k < pairs.size(); k++){
-                        // We need to check if only one candidate cell was found
-                        Cell candidate = null;
-                        boolean isValid = false;
-                        // We use a label to break the inner loop
-                        find :
-                        for (int l = yFromTo[0]; l <= yFromTo[1]; l++){
-                            for(int m = xFromTo[0]; m <= xFromTo[1]; m++){
-                                // We omit the main cell
-                                if (l == i && m == j){
-                                    continue;
-                                }
-                                // Is this a valid candidate?
-                                Cell temp = cells[l][m];
-                                if (!temp.GetIsByDefault() && temp.GetPossibleValues().size() >= 3 && temp.HasPair(pairs.get(k))){
-                                    if (candidate != null){
-                                        isValid = false;
-                                        break find;
-                                    }else{
-                                        candidate = temp;
-                                        isValid = true;
-                                    }
-                                }
-                            }
-                        }
-                        // Do we need to clean the both cells?
-                        if (isValid){
-                            cell.RemovePossibleValuesExceptPair(pairs.get(k));
-                            candidate.RemovePossibleValuesExceptPair(pairs.get(k));
-                            changes++;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        return changes > 0;
     }
 
     /**
@@ -540,6 +345,178 @@ public class Box {
     }
 
     /**
+     * Check if a possible value is unique in this box.
+     * @return true if the value is unique.
+     */
+    private boolean IsThisValueUniqueInBox(int value, int cellToSkipRow, int cellToSkipColumn){
+        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                // We omit the main cell
+                if (i != cellToSkipRow && j != cellToSkipColumn){
+                    Cell cell = cells[i][j];
+                    if (cell.HasPossibleValue(value)){
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Check if a possible value is unique in a given row.
+     * @param value the value.
+     * @param row the row.
+     * @param cellToSkipColumn the column of the cell who has the value.
+     * @return true if the value is unique.
+     */
+    private boolean IsThisValueUniqueInRow(int value, int row, int cellToSkipColumn){
+        for (int j = 0; j < cells.length; j++){
+            // We omit the main cell
+            if(j != cellToSkipColumn){
+                Cell cell = cells[row][j];
+                if (cell.HasPossibleValue(value)){
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Check if a possible value is unique in a given column.
+     * @param value the value.
+     * @param column the column.
+     * @param cellToSkipRow the row of the cell who has the value.
+     * @return true if the value is unique.
+     */
+    private boolean IsThisValueUniqueInColumn(int value, int column, int cellToSkipRow){
+        for (int i = 0; i < cells.length; i++){
+            // We omit the main cell
+            if(i != cellToSkipRow){
+                Cell cell = cells[i][column];
+                if (cell.HasPossibleValue(value)){
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Check if a pair of possible values only exist twice in the box
+     * @param pair the pair.
+     * @param cell the cell who has the pair.
+     * @return the cell who has the another pair.
+     */
+    private Cell IsThisPairOnyTwiceInBox(Integer[] pair, Cell cell){
+        Cell candidate = null;
+        boolean onlyTwice = false;
+        find :
+        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                Cell temp = cells[i][j];
+                // We omit the main cell
+                if (temp != cell){
+                    // We want to avoid use twice elimination with cells with literally the same possible values
+                    if (temp.GetPossibleValues().contains(cell.GetPossibleValues())){
+                        onlyTwice = false;
+                        break find;
+                    }
+                    // Is this a valid candidate?
+                    if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 3 && cell.HasPair(pair)){
+                        if (candidate != null){
+                            onlyTwice = false;
+                            break find;
+                        }else{
+                            candidate = temp;
+                            onlyTwice = true;
+                        }
+                    }
+                }
+            }
+        }
+        if (onlyTwice){
+            return candidate;
+        }
+        return null;
+    }
+
+    /**
+     * Check if a pair of possible values only exist twice in a given row.
+     * @param pair the pair.
+     * @param row the row.
+     * @param cell the cell who has the pair.
+     * @return the other cell who has the pair.
+     */
+    private Cell IsThisPairOnlyTwiceInRow(Integer[] pair, int row, Cell cell){
+        Cell candidate = null;
+        boolean onlyTwice = false;
+        for (int j = 0; j < cells.length; j++){
+            // We omit the main cell
+            Cell temp = cells[row][j];
+            if (temp != cell){
+                // We want to avoid use twice elimination with cells with literally the same possible values
+                if (temp.GetPossibleValues().contains(cell.GetPossibleValues())){
+                    onlyTwice = false;
+                    break;
+                }
+                // Is this valid candidate?
+                if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 3 && cell.HasPair(pair)){
+                    if (candidate != null){
+                        onlyTwice = false;
+                        break;
+                    }else{
+                        candidate = temp;
+                        onlyTwice = true;
+                    }
+                }
+            }
+        }
+        if (onlyTwice){
+            return  candidate;
+        }
+        return  null;
+    }
+
+    /**
+     * Check if a pair of possible values only exist twice in a given column.
+     * @param pair the pair.
+     * @param column the column.
+     * @param cell the cell who has the pair.
+     * @return the other cell who has the pair.
+     */
+    private Cell IsThisPairOnlyTwiceInColumn(Integer[] pair, int column, Cell cell){
+        Cell candidate = null;
+        boolean onlyTwice = false;
+        for (int i = 0; i < cells.length; i++){
+            // We omit the main cell
+            Cell temp = cells[i][column];
+            if (temp != cell){
+                // We want to avoid use twice elimination with cells with literally the same possible values
+                if (temp.GetPossibleValues().contains(cell.GetPossibleValues())){
+                    onlyTwice = false;
+                    break;
+                }
+                // Is this valid candidate?
+                if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 3 && cell.HasPair(pair)){
+                    if (candidate != null){
+                        onlyTwice = false;
+                        break;
+                    }else{
+                        candidate = temp;
+                        onlyTwice = true;
+                    }
+                }
+            }
+        }
+        if (onlyTwice){
+            return  candidate;
+        }
+        return  null;
+    }
+
+    /**
      * Find all default values in the box and clean them from each cell in the box.
      */
     public void CleanDefaultValuesInBox(){
@@ -607,17 +584,17 @@ public class Box {
      * @return true if the value was removed from any of the cells.
      */
     public boolean CleanPossibleValueInBox(int value){
-        int changes = 0;
+        boolean anyChange = false;
         // Loop through the cells inside the box
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
             for(int j = xFromTo[0]; j <= xFromTo[1]; j++){
                 Cell cell = cells[i][j];
                 if (cell.RemovePossibleValue(value)){
-                    changes++;
+                    anyChange = true;
                 }
             }
         }
-        return changes > 0;
+        return anyChange;
     }
 
     /**
@@ -627,19 +604,19 @@ public class Box {
      * @return true if the value was removed from any of the cells.
      */
     public boolean CleanPossibleValueInBox(int value, Cell toSkip){
-        int changes = 0;
+        boolean anyChange = false;
         // Loop through the cells inside the box
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
             for(int j = xFromTo[0]; j <= xFromTo[1]; j++){
                 Cell cell = cells[i][j];
                 if (cell != toSkip){
                     if(cell.RemovePossibleValue(value)){
-                        changes++;
+                        anyChange = true;
                     }
                 }
             }
         }
-        return changes > 0;
+        return anyChange;
     }
 
     /**
@@ -648,17 +625,17 @@ public class Box {
      * @return true if any of the values was removed from any of the cells.
      */
     public boolean CleanPossibleValuesInBox(List<Integer> values){
-        int changes = 0;
+        boolean anyChange = false;
         // Loop through the cells inside the box
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
             for(int j = xFromTo[0]; j <= xFromTo[1]; j++){
                 Cell cell = cells[i][j];
                 if(cell.RemovePossibleValues(values)){
-                    changes++;
+                    anyChange = true;
                 }
             }
         }
-        return changes > 0;
+        return anyChange;
     }
 
     /**
@@ -668,19 +645,19 @@ public class Box {
      * @return true if the value was removed from any of the cells.
      */
     public boolean CleanPossibleValuesInBox(List<Integer> values, Cell toSkip){
-        int changes = 0;
+        boolean anyChange = false;
         // Loop through the cells inside the box
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
             for(int j = xFromTo[0]; j <= xFromTo[1]; j++){
                 Cell cell = cells[i][j];
                 if (cell != toSkip){
                     if(cell.RemovePossibleValues(values)){
-                        changes++;
+                        anyChange = true;
                     }
                 }
             }
         }
-        return changes > 0;
+        return anyChange;
     }
 
 }
