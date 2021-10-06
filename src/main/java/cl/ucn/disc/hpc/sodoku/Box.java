@@ -173,7 +173,7 @@ public class Box {
         boolean anyChange = false;
         // Loop through the box rows
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
-            for (int j = xFromTo[0]; j < xFromTo[1]; j++){
+            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
                 //For each cell in the row, we must verify if for any of its possible values it is the only valid cell
                 Cell cell = cells[i][j];
                 if (!cell.GetIsByDefault() && !cell.HasOnlyOnePossibleValue()){
