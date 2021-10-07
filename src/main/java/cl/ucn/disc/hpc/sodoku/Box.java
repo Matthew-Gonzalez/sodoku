@@ -15,6 +15,7 @@ public class Box {
     private final Cell[][] cells;
     // The indexes covered by this box on the x-axis
     private final Integer[] xFromTo;
+
     // The indexes covered by this box on the y-axis
     private final Integer[] yFromTo;
 
@@ -49,7 +50,7 @@ public class Box {
                 // Check if the value is repeated
                 int value = cell.GetFirstPossibleValue();
                 if (values.contains(value)){
-                    log.warn("A box with the cell[{}][{}] has a repeated value", i, j);
+                    //log.warn("A box with the cell[{}][{}] has a repeated value", i, j);
                     return false;
                 }
                 values.add(value);
@@ -62,7 +63,7 @@ public class Box {
         // Loop through the cells
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
             List<Integer> values = new ArrayList<>();
-            for (int j = 0; j <= cells.length; j++){
+            for (int j = 0; j < cells.length; j++){
                 Cell cell = cells[i][j];
                 // Check if the cell has only one possible value
                 if (!cell.HasOnlyOnePossibleValue()){
@@ -71,7 +72,7 @@ public class Box {
                 // Check if the value is repeated
                 int value = cell.GetFirstPossibleValue();
                 if (values.contains(value)){
-                    log.warn("A row with the cell[{}][{}] has a repeated value", i, j);
+                    //log.warn("A row with the cell[{}][{}] has a repeated value", i, j);
                     return false;
                 }
                 values.add(value);
@@ -84,7 +85,7 @@ public class Box {
         // Loop through the cells
         for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
             List<Integer> values = new ArrayList<>();
-            for (int i = 0; i <= cells.length; i++){
+            for (int i = 0; i < cells.length; i++){
                 Cell cell = cells[i][j];
                 // Check if the cell has only one possible value
                 if (!cell.HasOnlyOnePossibleValue()){
@@ -93,7 +94,7 @@ public class Box {
                 // Check if the value is repeated
                 int value = cell.GetFirstPossibleValue();
                 if (values.contains(value)){
-                    log.warn("A column with the cell[{}][{}] has a repeated value", i, j);
+                    //log.warn("A column with the cell[{}][{}] has a repeated value", i, j);
                     return false;
                 }
                 values.add(value);
