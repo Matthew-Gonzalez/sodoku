@@ -419,13 +419,13 @@ public class Box {
                 Cell temp = cells[i][j];
                 // We omit the main cell
                 if (temp != cell){
-                    // We want to avoid use twice elimination with cells with literally the same possible values
-                    if (temp.GetPossibleValues().contains(cell.GetPossibleValues())){
-                        onlyTwice = false;
-                        break find;
-                    }
-                    // Is this a valid candidate?
-                    if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 3 && cell.HasPair(pair)){
+                    // Is this a valid candidate? Asking for size skip default cells
+                    if (cell.GetPossibleValues().size() >= 3 && cell.HasPair(pair)){
+                        // We want to avoid use twice elimination with cells with literally the same possible values
+                        if (temp.GetPossibleValues().equals(cell.GetPossibleValues())){
+                            onlyTwice = false;
+                            break find;
+                        }
                         if (candidate != null){
                             onlyTwice = false;
                             break find;
@@ -457,13 +457,13 @@ public class Box {
             // We omit the main cell
             Cell temp = cells[row][j];
             if (temp != cell){
-                // We want to avoid use twice elimination with cells with literally the same possible values
-                if (temp.GetPossibleValues().contains(cell.GetPossibleValues())){
-                    onlyTwice = false;
-                    break;
-                }
-                // Is this valid candidate?
-                if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 3 && cell.HasPair(pair)){
+                // Is this a valid candidate? Asking for size skip default cells
+                if (cell.GetPossibleValues().size() >= 3 && cell.HasPair(pair)){
+                    // We want to avoid use twice elimination with cells with literally the same possible values
+                    if (temp.GetPossibleValues().equals(cell.GetPossibleValues())){
+                        onlyTwice = false;
+                        break;
+                    }
                     if (candidate != null){
                         onlyTwice = false;
                         break;
@@ -494,13 +494,13 @@ public class Box {
             // We omit the main cell
             Cell temp = cells[i][column];
             if (temp != cell){
-                // We want to avoid use twice elimination with cells with literally the same possible values
-                if (temp.GetPossibleValues().contains(cell.GetPossibleValues())){
-                    onlyTwice = false;
-                    break;
-                }
-                // Is this valid candidate?
-                if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 3 && cell.HasPair(pair)){
+                // Is this a valid candidate? Asking for size skip default cells
+                if (cell.GetPossibleValues().size() >= 3 && cell.HasPair(pair)){
+                    // We want to avoid use twice elimination with cells with literally the same possible values
+                    if (temp.GetPossibleValues().equals(cell.GetPossibleValues())){
+                        onlyTwice = false;
+                        break;
+                    }
                     if (candidate != null){
                         onlyTwice = false;
                         break;
