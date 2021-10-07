@@ -201,148 +201,50 @@ public class Box {
     }
 
     /**
-     * Clean the rows of the box using Triplets' technique
-     * @return true if a change was made.
+     * Cleans the box using triplets technique.
+     * @return true if any change was made.
      */
-    private boolean TripletsRow(){
-        int changes = 0;
-        // Loop through the box cells
-        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
-            for (int j = 0; j < cells.length; j++){
-                // We are looking for a not default cell with four or more possible values
-                Cell cell = cells[i][j];
-                if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 4){
-                    List<Integer[]> triplets = cell.GetUniqueTriplets();
-                    for (int k = 0; k < triplets.size(); k++){
-                        // We need to check if only one candidate cell was found
-                        Stack<Cell> toChange = new Stack<>();
-                        toChange.add(cell);
-                        for (int h = 0; h < cells.length; h++){
-                            // We omit the main cell
-                            if (h == j){
-                                continue;
-                            }
-                            // Is this a valid candidate?
-                            Cell temp = cells[i][h];
-                            if (!temp.GetIsByDefault() && temp.GetPossibleValues().size() >= 3 && temp.HasTriplet(triplets.get(k))){
-                                toChange.add(temp);
-                                if (toChange.size() > 3){
-                                    break;
-                                }
-                            }
-                        }
-                        // Do we need to clean the both cells?
-                        if (toChange.size() == 3){
-                            while (!toChange.empty()){
-                                Cell temp = toChange.pop();
-                                temp.RemovePossibleValuesExceptTriplet(triplets.get(k));
-                            }
-                            changes++;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        return changes > 0;
-    }
-
-    /**
-     * Clean the columns of the box using Triplets' technique
-     * @return true if a change was made.
-     */
-    private boolean TripletsColumn(){
-        int changes = 0;
-        // Loop through the box cells
-        for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
-            for (int i = 0; i < cells.length; i++){
-                // We are looking for a not default cell with four or more possible values
-                Cell cell = cells[i][j];
-                if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 4){
-                    List<Integer[]> triplets = cell.GetUniqueTriplets();
-                    for (int k = 0; k < triplets.size(); k++){
-                        // We need to check if only one candidate cell was found
-                        Stack<Cell> toChange = new Stack<>();
-                        toChange.add(cell);
-                        for (int h = 0; h < cells.length; h++){
-                            // We omit the main cell
-                            if (h == i){
-                                continue;
-                            }
-                            // Is this a valid candidate?
-                            Cell temp = cells[h][j];
-                            if (!temp.GetIsByDefault() && temp.GetPossibleValues().size() >= 3 && temp.HasTriplet(triplets.get(k))){
-                                toChange.add(temp);
-                                if (toChange.size() > 3){
-                                    break;
-                                }
-                            }
-                        }
-                        // Do we need to clean the both cells?
-                        if (toChange.size() == 3){
-                            while (!toChange.empty()){
-                                Cell temp = toChange.pop();
-                                temp.RemovePossibleValuesExceptTriplet(triplets.get(k));
-                            }
-                            changes++;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        return changes > 0;
-    }
-
-    /**
-     * Clean the box using Twins' technique
-     * @return true if a change was made.
-     */
-    public boolean TripletsBox(){
-        int changes = 0;
+    public boolean Triplets(){
+        boolean anyChange = false;
         // Loop through the box cells
         for(int i = yFromTo[0]; i <= yFromTo[1]; i++){
             for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
-                // We are looking for a not default cell with three or more possible values
+                // We are looking for a not default cell with four or more possible values
                 Cell cell = cells[i][j];
-                if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 3){
+                if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 4){
                     List<Integer[]> triplets = cell.GetUniqueTriplets();
                     for (int k = 0; k < triplets.size(); k++){
-                        // We need to check if only one candidate cell was found
-                        Stack<Cell> toChange = new Stack<>();
-                        toChange.add(cell);
-                        // We use a label to break the inner loop
-                        find :
-                        for (int l = yFromTo[0]; l <= yFromTo[1]; l++){
-                            for(int m = xFromTo[0]; m <= xFromTo[1]; m++){
-                                // We omit the main cell
-                                if (l == i && m == j){
-                                    continue;
-                                }
-                                // Is this a valid candidate?
-                                Cell temp = cells[l][m];
-                                if (!temp.GetIsByDefault() && temp.GetPossibleValues().size() >= 3 && temp.HasTriplet(triplets.get(k))){
-                                    toChange.add(temp);
-                                    if (toChange.size() > 3){
-                                        break find;
-                                    }
-                                }
-                            }
+                        Integer[] triplet = triplets.get(k);
+                        Stack<Cell> toClean = new Stack<>();
+                        toClean.add(cell);
+                        // If this triplet only exist three times in the box
+                        Cell inBox = IsThisTripletOnyThreeTimesInBox(triplet, cell);
+                        if (inBox != null){
+                            toClean.add(inBox);
                         }
-                        // Do we need to clean the both cells
-                        if (toChange.size() == 3){
-                            while (!toChange.empty()){
-                                Cell temp = toChange.pop();
-                                temp.RemovePossibleValuesExceptTriplet(triplets.get(k));
+                        // If this triplet only exist three times in the row
+                        Cell inRow = IsThisTripletOnlyThreeTimesInRow(triplet, i, cell);
+                        if (inRow != null){
+                            toClean.add(inRow);
+                        }
+                        // If this triplet only exist three times in the column
+                        Cell inColumn = IsThisTripletOnlyThreeTimesInColumn(triplet, j, cell);
+                        if (inColumn != null){
+                            toClean.add(inColumn);
+                        }
+                        if (toClean.size() >= 3){
+                            while (!toClean.empty()){
+                                Cell temp = toClean.pop();
+                                temp.RemovePossibleValuesExceptTriplet(triplet);
                             }
-                            changes++;
+                            anyChange = true;
                             break;
                         }
                     }
                 }
             }
         }
-        return changes > 0;
+        return anyChange;
     }
 
     /**
@@ -512,6 +414,119 @@ public class Box {
             }
         }
         if (onlyTwice){
+            return  candidate;
+        }
+        return  null;
+    }
+
+    /**
+     * Check if a triplet of possible values only exist three times in the box
+     * @param triplet the triplet.
+     * @param cell the cell who has the triplet.
+     * @return the cell who has the another triplet.
+     */
+    private Cell IsThisTripletOnyThreeTimesInBox(Integer[] triplet, Cell cell){
+        Cell candidate = null;
+        boolean onlyThreeTimes = false;
+        find :
+        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                Cell temp = cells[i][j];
+                // We omit the main cell
+                if (temp != cell){
+                    // Is this a valid candidate? Asking for size skip default cells
+                    if (cell.GetPossibleValues().size() >= 4 && cell.HasTriplet(triplet)){
+                        // We want to avoid use triplets elimination with cells with literally the same possible values
+                        if (temp.GetPossibleValues().equals(cell.GetPossibleValues())){
+                            onlyThreeTimes = false;
+                            break find;
+                        }
+                        if (candidate != null){
+                            onlyThreeTimes = false;
+                            break find;
+                        }else{
+                            candidate = temp;
+                            onlyThreeTimes = true;
+                        }
+                    }
+                }
+            }
+        }
+        if (onlyThreeTimes){
+            return candidate;
+        }
+        return null;
+    }
+
+    /**
+     * Check if a pair of possible values only exist three times in a given row.
+     * @param triplet the triplet.
+     * @param row the row.
+     * @param cell the cell who has the triplet.
+     * @return the other cell who has the triplet.
+     */
+    private Cell IsThisTripletOnlyThreeTimesInRow(Integer[] triplet, int row, Cell cell){
+        Cell candidate = null;
+        boolean onlyThreeTimes = false;
+        for (int j = 0; j < cells.length; j++){
+            // We omit the main cell
+            Cell temp = cells[row][j];
+            if (temp != cell){
+                // Is this a valid candidate? Asking for size skip default cells
+                if (cell.GetPossibleValues().size() >= 3 && cell.HasTriplet(triplet)){
+                    // We want to avoid use triplet elimination with cells with literally the same possible values
+                    if (temp.GetPossibleValues().equals(cell.GetPossibleValues())){
+                        onlyThreeTimes = false;
+                        break;
+                    }
+                    if (candidate != null){
+                        onlyThreeTimes = false;
+                        break;
+                    }else{
+                        candidate = temp;
+                        onlyThreeTimes = true;
+                    }
+                }
+            }
+        }
+        if (onlyThreeTimes){
+            return  candidate;
+        }
+        return  null;
+    }
+
+    /**
+     * Check if a pair of possible values only exist three times in a given column.
+     * @param triplet the triplet.
+     * @param column the column.
+     * @param cell the cell who has the triplet.
+     * @return the other cell who has the triplet.
+     */
+    private Cell IsThisTripletOnlyThreeTimesInColumn(Integer[] triplet, int column, Cell cell){
+        Cell candidate = null;
+        boolean onlyThreeTimes = false;
+        for (int i = 0; i < cells.length; i++){
+            // We omit the main cell
+            Cell temp = cells[i][column];
+            if (temp != cell){
+                // Is this a valid candidate? Asking for size skip default cells
+                if (cell.GetPossibleValues().size() >= 3 && cell.HasTriplet(triplet)){
+                    // We want to avoid use triplet elimination with cells with literally the same possible values
+                    if (temp.GetPossibleValues().equals(cell.GetPossibleValues())){
+                        onlyThreeTimes = false;
+                        break;
+                    }
+                    if (candidate != null){
+                        onlyThreeTimes = false;
+                        break;
+                    }else{
+                        candidate = temp;
+                        onlyThreeTimes = true;
+                    }
+                }
+            }
+        }
+        if (onlyThreeTimes){
             return  candidate;
         }
         return  null;
