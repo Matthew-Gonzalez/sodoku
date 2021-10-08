@@ -121,22 +121,15 @@ public class Cell {
     }
 
     /**
-     * Remove a pair of values from the possible values.
-     * @param pair the pair.
-     * @return true if any of the value of the pair was removed.
+     * Given a trio remove all possible values except that trio.
+     * @param trio the triplet.
      */
-    public boolean RemovePairFromPossibleValues(Integer[] pair){
-        List<Integer> pairAsList = Arrays.asList(pair);
-        return possibleValues.removeAll(pairAsList);
-    }
-
-    /**
-     * Given a triplet remove all possible values except that triplet.
-     * @param triplet the triplet.
-     */
-    public void RemovePossibleValuesExceptTriplet(Integer[] triplet){
-        List<Integer> tripletAstList = Arrays.asList(triplet);
-        possibleValues.retainAll(tripletAstList);
+    public boolean RemovePossibleValuesExceptTrio(Integer[] trio){
+        List<Integer> tripletAstList = Arrays.asList(trio);
+        if (this.possibleValues.equals(tripletAstList)){
+            return false;
+        }
+        return possibleValues.retainAll(tripletAstList);
     }
 
     /**
@@ -198,28 +191,28 @@ public class Cell {
     }
 
     /**
-     * Get a list with the unique triplets between the possible values for the cell
-     * @return a list of arrays where each array is a pair.
+     * Get a list with the unique trios between the possible values for the cell
+     * @return a list of arrays where each array is a trio.
      */
-    public List<Integer[]> GetUniqueTriplets(){
-        List<Integer[]> triplets = new ArrayList<>();
+    public List<Integer[]> GetUniqueTrios(){
+        List<Integer[]> trios = new ArrayList<>();
         for (int i = 0; i < this.possibleValues.size() - 2; i++){
             for (int j = i + 2; j < this.possibleValues.size(); j++){
-                Integer[] triplet = {this.possibleValues.get(i), this.possibleValues.get(i + 1), this.possibleValues.get(j)};
-                triplets.add(triplet);
+                Integer[] trio = {this.possibleValues.get(i), this.possibleValues.get(i + 1), this.possibleValues.get(j)};
+                trios.add(trio);
             }
         }
-        return triplets;
+        return trios;
     }
 
     /**
-     * Check if the cell contains all values of a given triplet.
-     * @param triplet the triplet.
-     * @return true if the cell contains all value of the triplet.
+     * Check if the cell contains all values of a given trio.
+     * @param trio the trio.
+     * @return true if the cell contains all value of the trio.
      */
-    public boolean HasTriplet(Integer[] triplet){
-        List<Integer> tripletAsList = Arrays.asList(triplet);
-        return this.possibleValues.containsAll(tripletAsList);
+    public boolean HasTrio(Integer[] trio){
+        List<Integer> trioAsList = Arrays.asList(trio);
+        return this.possibleValues.containsAll(trioAsList);
     }
 
     /**
