@@ -231,18 +231,16 @@ public class Cell {
     }
 
     /**
-     * A cell can be locked to prevent data errors.
-     * @return true if the cell is locked.
+     * Get a clone of this cell.
+     * @return the clone.
      */
-    public boolean GetIsLock(){
-        return this.isLock;
-    }
-
-    /**
-     * A cell can be locked to prevent data errors.
-     * @param isLock true to lock this cell.
-     */
-    public void SetIsLock(boolean isLock){
-        this.isLock = isLock;
+    public Cell GetClone(){
+        if (this.isByDefault){
+            return new Cell(possibleValues.get(0));
+        }else{
+            Cell clone = new Cell();
+            clone.GetPossibleValues().addAll(this.possibleValues);
+            return  clone;
+        }
     }
 }

@@ -1,32 +1,34 @@
 package cl.ucn.disc.hpc.sodoku;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.time.StopWatch;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Scanner;
+import java.util.Stack;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The Main class
  */
 @Slf4j
 public class Main {
+    // The path of the text file from which we will get our sudoku
+    private final String PATH = "src/main/resources/sodoku.txt";
 
+    /**
+     * Main program method.
+     * @param args args.
+     */
     public static void main(String[] args) {
-        Sodoku sodoku = ReadTextFile("src/main/resources/sodoku.txt");
-        PrintSodokuCells(sodoku);
-        sodoku.Solve();
-        PrintSodokuCells(sodoku);
-        if (sodoku.IsTheSodokuSolved()){
-            log.debug("Solved!");
-        }else{
-            log.debug("Not solved! :c");
-        }
+        final int cores = 4;
+
+        // Try to solve the sudoku
+        SolveSudoku(cores);
     }
 
-    public static Sodoku ReadTextFile(String path) {
+    public static Sodoku SudokuFromTextFile(String path) {
         try {
             File file = new File(path);
             Scanner scanner = new Scanner(file);
@@ -55,14 +57,158 @@ public class Main {
         }
     }
 
-    public static void PrintSodokuCells(Sodoku sodoku){
-        for (int i = 0; i < sodoku.GetCells().length; i++){
-            List<List<Integer>> row = new ArrayList<>();
-            for (int j = 0; j < sodoku.GetCells().length; j++){
-                row.add(sodoku.GetCells()[i][j].GetPossibleValues());
-            }
-            log.debug("{}", row);
+    /**
+     * Try to solve a sudoku.
+     * @param cores how many cores will be used by brutal force.
+     */
+    private static void SolveSudoku(int cores){
+        // Build a sudoku from a text file
+        Sodoku mainSudoku = SudokuFromTextFile("src/main/resources/sodoku.txt");
+        // Did it find the text file?
+        if (mainSudoku == null){
+            return;
         }
-        log.debug("");
+
+        log.debug("Initial state (all possible values for each cell):");
+        mainSudoku.PrintCells();
+        log.debug("Trying to solve using reductions..." + "\n");
+
+        // Take the time
+        StopWatch stopWatch = StopWatch.createStarted();
+
+        // Reduction depends on only one thread
+        if (SolveSudokuByReductions(mainSudoku)){
+            long time = stopWatch.getTime(TimeUnit.MILLISECONDS);
+            mainSudoku.PrintCells();
+            log.debug("Sudoku solved using reduction in {} ms!", time);
+            return;
+        }
+
+        log.debug("Reductions were not enough to solve: " + "\n");
+        mainSudoku.PrintCells();
+        log.debug("Trying to solve using brutal force..." + "\n");
+
+        /*
+        // If reduction did not solve the sudoku we have to use brutal force
+        if (SolveSudokuByBruteForce(mainSudoku)){
+            long time = stopWatch.getTime(TimeUnit.MILLISECONDS);
+            log.debug("Sudoku was solved using brutal force in {} ms", time);
+            return;
+        }*/
+
+        long time = stopWatch.getTime(TimeUnit.MILLISECONDS);
+        log.debug("Brutal force was not enough to solve: " + "\n");
+        mainSudoku.PrintCells();
+        // Sudoku was not solved :c
+        log.debug("Sudoku was not solved | Failed at {} ms", time);
+    }
+
+    /**
+     * Use reductions techniques to solve the sudoku.
+     * @param sudoku the sudoku.
+     * @return true if the sudoku was solved.
+     */
+    private static boolean SolveSudokuByReductions(Sodoku sudoku){
+        return sudoku.Solve();
+    }
+
+    /**
+     * Use brute force to solve the sudoku with parallelism.
+     * @param sudoku the sudoku.
+     * @return true if the sudoku was solved.
+     */
+    public static boolean SolveSudokuByBruteForce(Sodoku sudoku){
+        // Stack to store all possible combinations for each cell with possible values
+        Stack<Sodoku> toTry = new Stack<>();
+
+        // First, for each cell with N >= 2 possible values we are going to store in the stack N possible sodoku
+        GetAndStorePossibilities(sudoku, toTry);
+
+        // Then we try to solve each possibility until the stack is empty
+        while (!toTry.empty()){
+            Sodoku solved = TryToSolveSudoku(toTry.pop(), toTry);
+            if (solved != null){
+                solved.PrintCells();
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Given a sudoku find all the cells with N >= possible values, then for each one create and store a new sudoku to try
+     * @param sudoku the sudoku.
+     * @param toTry the stack where we are going to store the possible sudoku solutions.
+     */
+    public static void GetAndStorePossibilities(Sodoku sudoku, Stack<Sodoku> toTry){
+        for (int i = 0; i < sudoku.GetCells().length; i++){
+            for (int j = 0; j < sudoku.GetCells().length; j++){
+                Cell cell = sudoku.GetCells()[i][j];
+                if (!cell.HasOnlyOnePossibleValue()){
+                    for (int k = 0; k < cell.GetPossibleValues().size(); k++){
+                        CreateCloneAndStoreSudoku(cell.GetPossibleValues().get(k), i, j, sudoku, toTry);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Create a copy of a sudoku but modifying a cell value. Then store the copy int the toTry Stack.
+     * @param value the new value for the cell.
+     * @param cellToChangeRow the row of the cell.
+     * @param cellToChangeColumn the column of the cell.
+     * @param sudoku the original sudoku.
+     * @param toTry the stack.
+     */
+    public static void CreateCloneAndStoreSudoku(int value, int cellToChangeRow, int cellToChangeColumn, Sodoku sudoku, Stack<Sodoku> toTry){
+        log.debug("Original:");
+        sudoku.PrintCells();
+        // Creates a clone of the sudoku
+        Sodoku clone = (Sodoku) sudoku.GetClone();
+        // Get the cell and change it value
+        Cell cell = clone.GetCell(cellToChangeRow, cellToChangeColumn);
+        log.debug("Cell: {} | new value: {}", cell.GetPossibleValues(), value);
+        cell.RemovePossibleValueExceptOne(value);
+        log.debug("Cell before: {}", cell.GetPossibleValues());
+        log.debug("Copy:");
+        clone.PrintCells();
+        // Stores the cell in the stack
+        toTry.push(clone);
+    }
+
+    /**
+     * Try to use reduction to solve the sudoku. It may origin new possibilities to try and store in the stack.
+     * @param sudoku the sudoku to solve.
+     * @param toTry the stack.
+     * @return the sudoku if it was solved.
+     */
+    public static Sodoku TryToSolveSudoku(Sodoku sudoku, Stack<Sodoku> toTry){
+        //log.debug("Try to solve: " + "\n");
+        //sudoku.PrintCells();
+        // Use reduction to try to solve the sudoku
+        /*
+        if (sudoku.Solve()){
+            return sudoku;
+        }
+        // If not we repeat the process and look for all the new possibilities to try
+        for (int i = 0; i < sudoku.GetCells().length; i++){
+            for (int j = 0; j < sudoku.GetCells().length; j++){
+                Cell cell = sudoku.GetCells()[i][j];
+                if (!cell.HasOnlyOnePossibleValue()){
+                    for (int k = 0; k < cell.GetPossibleValues().size(); k++){
+                        // Creates a clone of the sudoku
+                        Sodoku clone = (Sodoku) sudoku.GetClone();
+                        // Get the cell and change it value
+                        Cell a = clone.GetCell(i, j);
+                        a.RemovePossibleValuesExceptOne(cell.GetPossibleValues().get(k));
+                        // Stores the cell in the stack
+                        toTry.push(clone);
+                    }
+                }
+            }
+        }*/
+        return null;
     }
 }

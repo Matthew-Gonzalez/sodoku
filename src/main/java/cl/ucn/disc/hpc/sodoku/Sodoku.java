@@ -1,24 +1,15 @@
 package cl.ucn.disc.hpc.sodoku;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.time.StopWatch;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This class represents a sodoku.
  */
 @Slf4j
 public class Sodoku {
-    // Number of cores that are going to be used to solve the sudoku
-    private final int cores = 4;
-    // Max time in minutes to wait for the threads
-    private final int maxTime = 5;
     // A matrix with the cells of the sudoku
     private final Cell[][] cells;
     // A matrix with the boxes of the sudoku
@@ -41,6 +32,31 @@ public class Sodoku {
 
         // Then populates the boxes' matrix cleaning the default values
         CreateAndCleanBoxes();
+    }
+
+    /**
+     * Auxiliary constructor for clone purposes.
+     * @param cells cells.
+     * @param boxes boxes.
+     */
+    private Sodoku(Cell[][] cells, Box[][] boxes){
+        // Initialize the matrices
+        this.cells = new Cell[cells.length][cells.length];
+        this.boxes = new Box[boxes.length][boxes.length];
+
+        // Clone the cells one by one
+        for (int i = 0; i < cells.length; i++){
+            for (int j = 0; j < cells.length; j++){
+                this.cells[i][j] = cells[i][j].GetClone();
+            }
+        }
+
+        // Clone the boxes one by one
+        for (int i = 0; i < boxes.length; i++){
+            for (int j = 0; j < boxes.length; j++){
+                this.boxes[i][j] = boxes[i][j].GetClone(this.cells);
+            }
+        }
     }
 
     /**
@@ -128,83 +144,83 @@ public class Sodoku {
      * @return true if the sudoku was solved
      */
     public boolean Solve(){
-        StopWatch sw = StopWatch.createStarted();
+        return ReducePossibleValues();
+    }
+
+    /**
+     * Try to reduce the possible values of each cell.
+     * @return true if the sudoku was solved.
+     */
+    private boolean ReducePossibleValues(){
         int loops = -1;
         while(true){
             loops++;
-            PrintCells();
+            //PrintCells();
             // Is the sudoku solved?
-            if (IsTheSodokuSolved()){
-                log.debug("Loops required to solve: {} | Time required: {} ms", loops, sw.getTime(TimeUnit.MILLISECONDS));
+            if (IsTheSodokuSolved()) {
+                //log.debug("Loops required to solve only reducing: {}", loops);
                 return true;
             }
             // If we use simple elimination
             if (SimpleElimination()){
                 // We go back to the top of the loop
-                log.debug("A change was made by simple elimination:");
+                //log.debug("A change was made by simple elimination:");
                 continue;
             }
             // If we use loner rangers elimination
             if (LonerRangers()){
                 // We go back to the top of the loop
-                log.debug("A change was made by loner rangers elimination:");
+                //log.debug("A change was made by loner rangers' elimination:");
+                continue;
+            }/*
+            // If we use loner rangers elimination
+            if (LonerRangers()){
+                // We go back to the top of the loop
+                //log.debug("A change was made by loner rangers' elimination:");
+                continue;
+            }*/
+
+            // If we use naked twins elimination
+            if (NakedTwins()){
+                // We go back to the top of the loop
+                //log.debug("A change was made by twins elimination:");
                 continue;
             }
-            // If we use twins elimination
-            if (Twins()){
+            // If we use naked triplets elimination
+            if (NakedTriplets()){
                 // We go back to the top of the loop
-                log.debug("A change was made by twins elimination:");
+                continue;
+            }
+            // If we use hidden twins elimination
+            if (HiddenTwins()){
+                // We go back to the top of the loop
                 continue;
             }
             // If we cannot make any change we solve the sudoku by brute force
             break;
         }
-        log.debug("Total loops: {} | Time required: {} ms", loops, sw.getTime(TimeUnit.MILLISECONDS));
-        return false;
+        //log.debug("Loops until reducing fails: {}", loops);
+        return  false;
     }
 
     /**
      * Parallel check if the sodoku is solved.
      * @return true if the sodoku is solved.
      */
-    public boolean IsTheSodokuSolved(){
-        AtomicBoolean isSolved = new AtomicBoolean(true);
-        ExecutorService executorService = Executors.newFixedThreadPool(cores);
-
-        log.debug("Checking if the sodoku is solved");
-        StopWatch sw = StopWatch.createStarted();
-
+    public boolean IsTheSodokuSolved() {
         // Loop through the boxes
-        for (int i = 0; i < boxes.length; i++){
-            for (int j = 0; j < boxes.length; j++){
-                final int row = i;
-                final int column = j;
-                // Use a thread to check if this box is valid
-                executorService.submit(() -> {
-                    Box box = boxes[row][column];
-                    boolean isThisBoxValid = box.IsThisBoxValid();
-                    boolean areTheBoxRowsValid = box.AreTheBoxRowsValid();
-                    boolean areTheBoxColumnsValid = box.AreTheBoxColumnsValid();
-                    if (!isThisBoxValid || !areTheBoxRowsValid || !areTheBoxColumnsValid){
-                        isSolved.compareAndSet(true, false);
-                    }
-                });
+        for (int i = 0; i < boxes.length; i++) {
+            for (int j = 0; j < boxes.length; j++) {
+                Box box = boxes[i][j];
+                boolean isThisBoxValid = box.IsThisBoxValid();
+                boolean areTheBoxRowsValid = box.AreTheBoxRowsValid();
+                boolean areTheBoxColumnsValid = box.AreTheBoxColumnsValid();
+                if (!isThisBoxValid || !areTheBoxRowsValid || !areTheBoxColumnsValid) {
+                    return false;
+                }
             }
         }
-        // wait for threads to end
-        executorService.shutdown();
-        try{
-            if (executorService.awaitTermination(maxTime, TimeUnit.MINUTES)){
-                executorService.shutdown();
-            }
-        }catch (InterruptedException e){
-            executorService.shutdown();
-            log.warn("Error in check valid box threads!");
-        }
-
-        log.debug("Finished in {} ms!" + "\n", sw.getTime(TimeUnit.MILLISECONDS));
-
-        return isSolved.get();
+        return true;
     }
 
     /**
@@ -218,7 +234,7 @@ public class Sodoku {
             for (int j = 0; j < boxes.length; j++){
                 Box box = boxes[i][j];
                 if (box.SimpleElimination()){
-                    anyChange = true;
+                    return true;
                 }
             }
         }
@@ -236,7 +252,7 @@ public class Sodoku {
             for (int j = 0; j < boxes.length; j++){
                 Box box = boxes[i][j];
                 if (box.LonerRangers()){
-                    anyChange = true;
+                    return true;
                 }
             }
         }
@@ -244,21 +260,52 @@ public class Sodoku {
     }
 
     /**
-     * Loner rangers' technique for each box in the sudoku.
+     * Naked Twins technique for each box in the sudoku.
      * @return true if any change was made.
      */
-    private boolean Twins(){
+    private boolean NakedTwins(){
         boolean anyChange = false;
         // Loop through the boxes
         for (int i = 0; i < boxes.length; i++){
             for (int j = 0; j < boxes.length; j++){
                 Box box = boxes[i][j];
-                if (box.Twins()){
-                    anyChange = true;
+                if (box.NakedTwins()){
+                    return true;
                 }
             }
         }
         return anyChange;
+    }
+
+    /**
+     * Naked triplets' technique for each box in the sudoku.
+     * @return true if any change was made.
+     */
+    private boolean NakedTriplets(){
+        boolean anyChange = false;
+        // Loop through the boxes
+        for (int i = 0; i < boxes.length; i++){
+            for (int j = 0; j < boxes.length; j++){
+                Box box = boxes[i][j];
+                if (box.NakedTriplets()){
+                    return true;
+                }
+            }
+        }
+        return anyChange;
+    }
+
+    private boolean HiddenTwins(){
+        // Loop through the boxes
+        for (int i = 0; i < boxes.length; i++){
+            for (int j = 0; j < boxes.length; j++){
+                Box box = boxes[i][j];
+                if (box.HiddenTwins()){
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public void PrintCells(){
@@ -270,5 +317,27 @@ public class Sodoku {
             log.debug("{}", row);
         }
         log.debug("");
+    }
+
+    /**
+     * Get a cell from the sudoku.
+     * @param row the cell row.
+     * @param column the cell column.
+     * @return the cell.
+     */
+    public Cell GetCell(int row, int column){
+        return cells[row][column];
+    }
+
+    /**
+     * Get the cells of the sudoku.
+     * @return a matrix with the cells.
+     */
+    public Cell[][] GetCells(){
+        return this.cells;
+    }
+
+    public Sodoku GetClone() {
+        return new Sodoku(this.cells, this.boxes);
     }
 }

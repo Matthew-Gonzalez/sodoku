@@ -114,14 +114,24 @@ public class Box {
                 Cell cell = cells[i][j];
                 // If the cell is not default and has multiple possible values
                 if (!cell.GetIsByDefault() && !cell.HasOnlyOnePossibleValue()){
-                    for(int k = 0; k < cell.GetPossibleValues().size(); k++){
-                        int value = cell.GetPossibleValues().get(k);
-                        if (IsThisValueUniqueInBox(value, i, j) && IsThisValueUniqueInRow(value, i, j)
-                                && IsThisValueUniqueInColumn(value, j, i)){
-                            // This value is unique in its box, row and column, so we remove the other possible values
-                            cell.RemovePossibleValuesExceptOne(value);
-                            anyChange = true;
-                            break;
+                    for (int value : cell.GetPossibleValues()){
+                        // Is unique in box?
+                        boolean isUniqueInBox = IsThisValueUniqueInBox(value, cell);
+                        // Is unique in row?
+                        boolean isUniqueInRow = IsThisValueUniqueInRow(value, i, cell);
+                        // Is unique in column?
+                        boolean isUniqueInColumn = IsThisValueUniqueInColumn(value, j, cell);
+                        // Must clean?
+                        if (isUniqueInBox || isUniqueInRow || isUniqueInColumn){
+                            if (cell.RemovePossibleValueExceptOne(value)){
+                                // Must clean from box, row and column
+                                CleanPossibleValueInBox(value, cell);
+                                CleanPossibleValueInRow(value, i, cell);
+                                CleanPossibleValueInBox(value, cell);
+                                return true;
+                            }else{
+                                log.debug("Tried to simple elimination on single value cell?");
+                            }
                         }
                     }
                 }
@@ -143,9 +153,9 @@ public class Box {
                 if (!cell.GetIsByDefault() && cell.HasOnlyOnePossibleValue()){
                     // Clean the box, row and column
                     int value = cell.GetFirstPossibleValue();
-                    if (CleanPossibleValueInBox(value, cell) || CleanPossibleValuesInRow(value, i, j)
-                            || CleanPossibleValuesInColumn(value, j, i)){
-                        anyChange = true;
+                    if (CleanPossibleValueInBox(value, cell) || CleanPossibleValueInRow(value, i, cell)
+                            || CleanPossibleValueInColumn(value, j, cell)){
+                        return true;
                     }
                 }
             }
@@ -157,42 +167,22 @@ public class Box {
      * Clean the box using twins technique.
      * @return true if any change was made.
      */
-    public boolean Twins(){
+    public boolean NakedTwins(){
         boolean anyChange = false;
         // Loop through the box cells
         for(int i = yFromTo[0]; i <= yFromTo[1]; i++){
             for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
-                // We are looking for a not default cell with three or more possible values
+                // We are looking for a not default cell with two possible values
                 Cell cell = cells[i][j];
-                if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 3){
-                    List<Integer[]> pairs = cell.GetUniquePairs();
-                    for (int k = 0; k < pairs.size(); k++){
-                        Integer[] pair = pairs.get(k);
-                        Stack<Cell> toClean = new Stack<>();
-                        toClean.add(cell);
-                        // If this pair only exist twice in the box
-                        Cell inBox = IsThisPairOnyTwiceInBox(pair, cell);
-                        if (inBox != null){
-                            toClean.add(inBox);
-                        }
-                        // If this pair only exist twice in the row
-                        Cell inRow = IsThisPairOnlyTwiceInRow(pair, i, cell);
-                        if (inRow != null){
-                            toClean.add(inRow);
-                        }
-                        // If this pair only exist twice in the column
-                        Cell inColumn = IsThisPairOnlyTwiceInColumn(pair, j, cell);
-                        if (inColumn != null){
-                            toClean.add(inColumn);
-                        }
-                        if (toClean.size() >= 2){
-                            while (!toClean.empty()){
-                                Cell temp = toClean.pop();
-                                temp.RemovePossibleValuesExceptPair(pair);
-                            }
-                            anyChange = true;
-                            break;
-                        }
+                if (cell.GetPossibleValues().size() == 2){
+                    if (TryToNakedTwinsInBox(cell)){
+                        return true;
+                    }
+                    if (TryToNakedTwinsInRow(cell, i)){
+                        return true;
+                    }
+                    if (TryToNakedTwinsInColumn(cell, j)){
+                        return true;
                     }
                 }
             }
@@ -200,64 +190,518 @@ public class Box {
         return anyChange;
     }
 
-    /**
-     * Cleans the box using triplets technique.
-     * @return true if any change was made.
-     */
-    public boolean Triplets(){
+    public boolean NakedTriplets(){
         boolean anyChange = false;
         // Loop through the box cells
         for(int i = yFromTo[0]; i <= yFromTo[1]; i++){
             for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
-                // We are looking for a not default cell with four or more possible values
+                // We are looking for a not default cell with three possible values
                 Cell cell = cells[i][j];
-                if (!cell.GetIsByDefault() && cell.GetPossibleValues().size() >= 4){
-                    List<Integer[]> triplets = cell.GetUniqueTriplets();
-                    for (int k = 0; k < triplets.size(); k++){
-                        Integer[] triplet = triplets.get(k);
-                        Stack<Cell> toClean = new Stack<>();
-                        toClean.add(cell);
-                        // If this triplet only exist three times in the box
-                        Cell inBox = IsThisTripletOnyThreeTimesInBox(triplet, cell);
-                        if (inBox != null){
-                            toClean.add(inBox);
+                if (cell.GetPossibleValues().size() == 3){
+                    if (TryToNakedTripletsInBox(cell)){
+                        return true;
+                    }
+                    if (TryToNakedTripletsInRow(cell, i)){
+                        return true;
+                    }
+                    if (TryToNakedTripletsInColumn(cell, j)){
+                        return true;
+                    }
+                }
+            }
+        }
+        return anyChange;
+    }
+
+    public boolean HiddenTwins(){
+        for(int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                // We are looking for a not default cell with two or more possible values
+                Cell cell = cells[i][j];
+                if (cell.GetPossibleValues().size() >= 2){
+                    List<Integer[]> pairs = cell.GetUniquePairs();
+                    for (int k = 0; k < pairs.size(); k++){
+                        if (TryToHiddenTwinsInBox(cell, pairs.get(k))){
+                            return true;
                         }
-                        // If this triplet only exist three times in the row
-                        Cell inRow = IsThisTripletOnlyThreeTimesInRow(triplet, i, cell);
-                        if (inRow != null){
-                            toClean.add(inRow);
+                        if (TryToHiddenTwinsInRow(cell, pairs.get(k), i)){
+                            return true;
                         }
-                        // If this triplet only exist three times in the column
-                        Cell inColumn = IsThisTripletOnlyThreeTimesInColumn(triplet, j, cell);
-                        if (inColumn != null){
-                            toClean.add(inColumn);
-                        }
-                        if (toClean.size() >= 3){
-                            while (!toClean.empty()){
-                                Cell temp = toClean.pop();
-                                temp.RemovePossibleValuesExceptTriplet(triplet);
-                            }
-                            anyChange = true;
-                            break;
+                        if (TryToHiddenTwinsInColumn(cell, pairs.get(k), j)){
+                            return true;
                         }
                     }
                 }
             }
+        }
+        return false;
+    }
+
+    /**
+     * Try to use naked twins technique in box.
+     * @param twin_1 the twin
+     * @return true if any change was made.
+     */
+    private boolean TryToNakedTwinsInBox(Cell twin_1){
+        boolean anyChange = false;
+        Cell twin_2 = null;
+        Stack<Cell> toClean = new Stack<>();
+        // Loop through the box cells
+        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                Cell temp = cells[i][j];
+                // We skip twin_1 cell
+                if (temp != twin_1){
+                    // Is this cell the other twin?
+                    if (temp.GetPossibleValues().equals(twin_1.GetPossibleValues())){
+                        if (twin_2 != null){
+                            return false;
+                        }
+                        twin_2 = temp;
+                    }else if (!temp.HasOnlyOnePossibleValue()){
+                        toClean.push(temp);
+                    }
+                }
+            }
+        }
+        // If twins
+        if (twin_2 != null){
+            //log.debug("Twins in row: {} | {}", twin_1.GetPossibleValues(), twin_2.GetPossibleValues());
+            // Remove twins values from other cells
+            while(!toClean.empty()){
+                Cell beCleaned = toClean.pop();
+                //log.debug("To clean: {}", beCleaned.GetPossibleValues());
+                if (beCleaned.RemovePossibleValues(twin_1.GetPossibleValues())){
+                    //log.debug("     Result: {}", beCleaned.GetPossibleValues());
+                    anyChange = true;
+                }
+            }
+            if (anyChange){
+                //log.debug("Result:");
+                //PrintCells();
+            }else{
+                //log.debug("Result: no changes");
+            }
+        }
+        return anyChange;
+    }
+
+    /**
+     * Try to use naked twins technique in row.
+     * @param twin_1 the twin
+     * @param row the row.
+     * @return true if any change was made.
+     */
+    private boolean TryToNakedTwinsInRow(Cell twin_1, int row){
+        boolean anyChange = false;
+        Cell twin_2 = null;
+        Stack<Cell> toClean = new Stack<>();
+        // Loop through the box row
+        for (int j = 0; j < cells.length; j++){
+            Cell temp = cells[row][j];
+            // We skip twin_1 cell
+            if (temp != twin_1){
+                // Is this cell the other twin?
+                if (temp.GetPossibleValues().equals(twin_1.GetPossibleValues())){
+                    if (twin_2 != null){
+                        return false;
+                    }
+                    twin_2 = temp;
+                }else if (!temp.HasOnlyOnePossibleValue()){
+                    toClean.push(temp);
+                }
+            }
+        }
+        // If twins
+        if (twin_2 != null){
+            //log.debug("Twins in row: {} | {}", twin_1.GetPossibleValues(), twin_2.GetPossibleValues());
+            // Remove twins values from other cells
+            while(!toClean.empty()){
+                Cell beCleaned = toClean.pop();
+                //log.debug("To clean: {}", beCleaned.GetPossibleValues());
+                if (beCleaned.RemovePossibleValues(twin_1.GetPossibleValues())){
+                    //log.debug("     Result: {}", beCleaned.GetPossibleValues());
+                    anyChange = true;
+                }
+            }
+            if (anyChange){
+                //log.debug("Result:");
+                //PrintCells();
+            }else{
+                //log.debug("Result: no changes");
+            }
+        }
+        return anyChange;
+    }
+
+    /**
+     * Try to use naked twins technique in column.
+     * @param twin_1 the twin
+     * @param column the column.
+     * @return true if any change was made.
+     */
+    private boolean TryToNakedTwinsInColumn(Cell twin_1, int column){
+        boolean anyChange = false;
+        Cell twin_2 = null;
+        Stack<Cell> toClean = new Stack<>();
+        // Loop through the box column
+        for (int i = 0; i < cells.length; i++){
+            Cell temp = cells[i][column];
+            // We skip twin_1 cell
+            if (temp != twin_1){
+                // Is this cell the other twin?
+                if (temp.GetPossibleValues().equals(twin_1.GetPossibleValues())){
+                    if (twin_2 != null){
+                        return false;
+                    }
+                    twin_2 = temp;
+                }else if (!temp.HasOnlyOnePossibleValue()){
+                    toClean.push(temp);
+                }
+            }
+        }
+        // If twins
+        if (twin_2 != null){
+            //log.debug("Twins in row: {} | {}", twin_1.GetPossibleValues(), twin_2.GetPossibleValues());
+            // Remove twins values from other cells
+            while(!toClean.empty()){
+                Cell beCleaned = toClean.pop();
+                //log.debug("To clean: {}", beCleaned.GetPossibleValues());
+                if (beCleaned.RemovePossibleValues(twin_1.GetPossibleValues())){
+                    //log.debug("     Result: {}", beCleaned.GetPossibleValues());
+                    anyChange = true;
+                }
+            }
+            if (anyChange){
+                //log.debug("Result:");
+                //PrintCells();
+            }else{
+                //log.debug("Result: no changes");
+            }
+        }
+        return anyChange;
+    }
+
+    /**
+     * Try to use naked triplets' technique in box.
+     * @param triplet_1 the triplet.
+     * @return true if any change was made.
+     */
+    private boolean TryToNakedTripletsInBox(Cell triplet_1){
+        boolean anyChange = false;
+        Cell triplet_2 = null;
+        Cell triplet_3 = null;
+        Stack<Cell> toClean = new Stack<>();
+        // Loop through the box cells
+        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                Cell temp = cells[i][j];
+                // We skip twin_1 cell
+                if (temp != triplet_1){
+                    // Is this cell a triplet?
+                    if (temp.GetPossibleValues().equals(triplet_1.GetPossibleValues())){
+                        if (triplet_2 == null){
+                            triplet_2 = temp;
+                        }else if (triplet_3 == null){
+                            triplet_3 = temp;
+                        }else{
+                            return false;
+                        }
+                    }else if (!temp.HasOnlyOnePossibleValue()){
+                        toClean.push(temp);
+                    }
+                }
+            }
+        }
+        // If triplets
+        if (triplet_2 != null && triplet_3 != null){
+            //log.debug("Triplet in box: {} | {} | {}", triplet_1.GetPossibleValues(), triplet_2.GetPossibleValues(), triplet_3.GetFirstPossibleValue());
+            // Remove twins values from other cells
+            while(!toClean.empty()){
+                Cell beCleaned = toClean.pop();
+                //log.debug("To clean: {}", beCleaned.GetPossibleValues());
+                if (beCleaned.RemovePossibleValues(triplet_1.GetPossibleValues())){
+                    //log.debug("     Result: {}", beCleaned.GetPossibleValues());
+                    anyChange = true;
+                }
+            }
+            if (anyChange){
+                //log.debug("Result:");
+                //PrintCells();
+            }else{
+                //log.debug("Result: no changes");
+            }
+        }
+        return anyChange;
+    }
+
+    /**
+     * Try to use naked triplets' technique in row.
+     * @param triplet_1 the triplet.
+     * @param row the row.
+     * @return true if any change was made.
+     */
+    private boolean TryToNakedTripletsInRow(Cell triplet_1, int row){
+        boolean anyChange = false;
+        Cell triplet_2 = null;
+        Cell triplet_3 = null;
+        Stack<Cell> toClean = new Stack<>();
+        // Loop through the box cells
+        for (int j = 0; j < cells.length; j++){
+            Cell temp = cells[row][j];
+            // We skip twin_1 cell
+            if (temp != triplet_1){
+                // Is this cell a triplet?
+                if (temp.GetPossibleValues().equals(triplet_1.GetPossibleValues())){
+                    if (triplet_2 == null){
+                        triplet_2 = temp;
+                    }else if (triplet_3 == null){
+                        triplet_3 = temp;
+                    }else{
+                        return false;
+                    }
+                }else if (!temp.HasOnlyOnePossibleValue()){
+                    toClean.push(temp);
+                }
+            }
+        }
+        // If triplets
+        if (triplet_2 != null && triplet_3 != null){
+            //log.debug("Triplet in box: {} | {} | {}", triplet_1.GetPossibleValues(), triplet_2.GetPossibleValues(), triplet_3.GetFirstPossibleValue());
+            // Remove twins values from other cells
+            while(!toClean.empty()){
+                Cell beCleaned = toClean.pop();
+                //log.debug("To clean: {}", beCleaned.GetPossibleValues());
+                if (beCleaned.RemovePossibleValues(triplet_1.GetPossibleValues())){
+                    //log.debug("     Result: {}", beCleaned.GetPossibleValues());
+                    anyChange = true;
+                }
+            }
+            if (anyChange){
+                //log.debug("Result:");
+                //PrintCells();
+            }else{
+                //log.debug("Result: no changes");
+            }
+        }
+        return anyChange;
+    }
+
+    /**
+     * Try to use naked triplets' technique in column.
+     * @param triplet_1 the triplet.
+     * @param column the column.
+     * @return true if any change was made.
+     */
+    private boolean TryToNakedTripletsInColumn(Cell triplet_1, int column){
+        boolean anyChange = false;
+        Cell triplet_2 = null;
+        Cell triplet_3 = null;
+        Stack<Cell> toClean = new Stack<>();
+        // Loop through the box cells
+        for (int i = 0; i < cells.length; i++){
+            Cell temp = cells[i][column];
+            // We skip twin_1 cell
+            if (temp != triplet_1){
+                // Is this cell a triplet?
+                if (temp.GetPossibleValues().equals(triplet_1.GetPossibleValues())){
+                    if (triplet_2 == null){
+                        triplet_2 = temp;
+                    }else if (triplet_3 == null){
+                        triplet_3 = temp;
+                    }else{
+                        return false;
+                    }
+                }else if (!temp.HasOnlyOnePossibleValue()){
+                    toClean.push(temp);
+                }
+            }
+        }
+        // If triplets
+        if (triplet_2 != null && triplet_3 != null){
+            //log.debug("Triplet in box: {} | {} | {}", triplet_1.GetPossibleValues(), triplet_2.GetPossibleValues(), triplet_3.GetFirstPossibleValue());
+            // Remove twins values from other cells
+            while(!toClean.empty()){
+                Cell beCleaned = toClean.pop();
+                //log.debug("To clean: {}", beCleaned.GetPossibleValues());
+                if (beCleaned.RemovePossibleValues(triplet_1.GetPossibleValues())){
+                    //log.debug("     Result: {}", beCleaned.GetPossibleValues());
+                    anyChange = true;
+                }
+            }
+            if (anyChange){
+                //log.debug("Result:");
+                //PrintCells();
+            }else{
+                //log.debug("Result: no changes");
+            }
+        }
+        return anyChange;
+    }
+
+    /**
+     * Try to use hidden twins technique in box.
+     * @param twin_1 the twin.
+     * @param pair the pair.
+     * @return true if any change was made.
+     */
+    private boolean TryToHiddenTwinsInBox(Cell twin_1, Integer[] pair){
+        boolean anyChange = false;
+        Cell twin_2 = null;
+        // Loop through the box cells
+        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                Cell temp = cells[i][j];
+                // We skip twin_1 cell
+                if (temp != twin_1){
+                    // Is this a valid twin?
+                    if (temp.HasPair(pair)){
+                        // If a twins was already found
+                        if (twin_2 != null){
+                            return false;
+                        }
+                        twin_2 = temp;
+                    }
+                    // If the cell is not a twin but has any of the pair values, we cannot use twins
+                    if (temp.HasPossibleValue(pair[0]) || temp.HasPossibleValue(pair[1])){
+                        if (temp.HasOnlyOnePossibleValue()){
+                            log.error("Cell with single value is not unique in the box after use twins | value: {} | axis: [{},{}]", temp.GetFirstPossibleValue(), i, j);
+                            PrintCells();
+                        }
+                        return false;
+                    }
+                }
+            }
+        }
+        // If twins we clean the other values from these cells
+        if (twin_2 != null){
+            log.debug("Trying to twins in box with pair: [{},{}]", pair[0], pair[1]);
+            PrintBox();
+            log.debug("Twins: {} | {}", twin_1.GetFirstPossibleValue(), twin_2.GetPossibleValues());
+            if (twin_1.RemovePossibleValuesExceptPair(pair)){
+                anyChange = true;
+            }
+            if (twin_2.RemovePossibleValuesExceptPair(pair)){
+                anyChange = true;
+            }
+            log.debug("Result");
+            PrintBox();
+        }
+        return anyChange;
+    }
+
+    /**
+     * Try to use hidden twins technique in row.
+     * @param twin_1 the twin.
+     * @param pair the pair.
+     * @param row the row.
+     * @return true if any change was made.
+     */
+    private boolean TryToHiddenTwinsInRow(Cell twin_1, Integer[] pair, int row){
+        log.debug("Trying to twins in row with pair: [{},{}]", pair[0], pair[1]);
+        PrintRow(row);
+        boolean anyChange = false;
+        Cell twin_2 = null;
+        // Loop through the row
+        for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+            Cell temp = cells[row][j];
+            // We skip twin_1 cell
+            if (temp != twin_1){
+                // Is this a valid twin?
+                if (temp.HasPair(pair)){
+                    // If a twins was already found
+                    if (twin_2 != null){
+                        return false;
+                    }
+                    twin_2 = temp;
+                }
+                // If the cell is not a twin but has any of the pair values, we cannot use twins
+                if (temp.HasPossibleValue(pair[0]) || temp.HasPossibleValue(pair[1])){
+                    if (temp.HasOnlyOnePossibleValue()){
+                        log.error("Cell with single value is not unique in the row after use twins | value: {} | axis: [{},{}]", temp.GetFirstPossibleValue(), row, j);
+                        PrintCells();
+                    }
+                    return false;
+                }
+            }
+        }
+        // If twins we clean the other values from these cells
+        if (twin_2 != null){
+            log.debug("Twins: {} | {}", twin_1.GetFirstPossibleValue(), twin_2.GetPossibleValues());
+            if (twin_1.RemovePossibleValuesExceptPair(pair)){
+                anyChange = true;
+            }
+            if (twin_2.RemovePossibleValuesExceptPair(pair)){
+                anyChange = true;
+            }
+            log.debug("Result");
+            PrintRow(row);
+        }
+        return anyChange;
+    }
+
+    /**
+     * Try to use hidden twins technique in column.
+     * @param twin_1 the twin.
+     * @param pair the pair.
+     * @param column the column.
+     * @return true if any change was made.
+     */
+    private boolean TryToHiddenTwinsInColumn(Cell twin_1, Integer[] pair, int column){
+        log.debug("Trying to twins in column with pair: [{},{}]", pair[0], pair[1]);
+        PrintColumn(column);
+        boolean anyChange = false;
+        Cell twin_2 = null;
+        // Loop through the column
+        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            Cell temp = cells[i][column];
+            // We skip twin_1 cell
+            if (temp != twin_1){
+                // Is this a valid twin?
+                if (temp.HasPair(pair)){
+                    // If a twins was already found
+                    if (twin_2 != null){
+                        return false;
+                    }
+                    twin_2 = temp;
+                }
+                // If the cell is not a twin but has any of the pair values, we cannot use twins
+                if (temp.HasPossibleValue(pair[0]) || temp.HasPossibleValue(pair[1])){
+                    if (temp.HasOnlyOnePossibleValue()){
+                        log.error("Cell with single value is not unique in the column after use twins | value: {} | axis: [{},{}]", temp.GetFirstPossibleValue(), i, column);
+                        PrintCells();
+                    }
+                    return false;
+                }
+            }
+        }
+        // If twins we clean the other values from these cells
+        if (twin_2 != null){
+            log.debug("Twins: {} | {}", twin_1.GetFirstPossibleValue(), twin_2.GetPossibleValues());
+            if (twin_1.RemovePossibleValuesExceptPair(pair)){
+                anyChange = true;
+            }
+            if (twin_2.RemovePossibleValuesExceptPair(pair)){
+                anyChange = true;
+            }
+            log.debug("Result");
+            PrintColumn(column);
         }
         return anyChange;
     }
 
     /**
      * Check if a possible value is unique in this box.
+     * @param cell the cell with the value.
      * @return true if the value is unique.
      */
-    private boolean IsThisValueUniqueInBox(int value, int cellToSkipRow, int cellToSkipColumn){
+    private boolean IsThisValueUniqueInBox(int value, Cell cell){
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
             for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
                 // We omit the main cell
-                if (i != cellToSkipRow && j != cellToSkipColumn){
-                    Cell cell = cells[i][j];
-                    if (cell.HasPossibleValue(value)){
+                Cell temp = cells[i][j];
+                if (temp != cell){
+                    if (temp.HasPossibleValue(value)){
                         return false;
                     }
                 }
@@ -270,15 +714,14 @@ public class Box {
      * Check if a possible value is unique in a given row.
      * @param value the value.
      * @param row the row.
-     * @param cellToSkipColumn the column of the cell who has the value.
+     * @param cell the cell with the value.
      * @return true if the value is unique.
      */
-    private boolean IsThisValueUniqueInRow(int value, int row, int cellToSkipColumn){
+    private boolean IsThisValueUniqueInRow(int value, int row, Cell cell){
         for (int j = 0; j < cells.length; j++){
-            // We omit the main cell
-            if(j != cellToSkipColumn){
-                Cell cell = cells[row][j];
-                if (cell.HasPossibleValue(value)){
+            Cell temp = cells[row][j];
+            if (temp != cell){
+                if (temp.HasPossibleValue(value)){
                     return false;
                 }
             }
@@ -290,246 +733,19 @@ public class Box {
      * Check if a possible value is unique in a given column.
      * @param value the value.
      * @param column the column.
-     * @param cellToSkipRow the row of the cell who has the value.
+     * @param cell the cell with the value.
      * @return true if the value is unique.
      */
-    private boolean IsThisValueUniqueInColumn(int value, int column, int cellToSkipRow){
+    private boolean IsThisValueUniqueInColumn(int value, int column, Cell cell){
         for (int i = 0; i < cells.length; i++){
-            // We omit the main cell
-            if(i != cellToSkipRow){
-                Cell cell = cells[i][column];
+            Cell temp = cells[i][column];
+            if (temp != cell){
                 if (cell.HasPossibleValue(value)){
                     return false;
                 }
             }
         }
         return true;
-    }
-
-    /**
-     * Check if a pair of possible values only exist twice in the box
-     * @param pair the pair.
-     * @param cell the cell who has the pair.
-     * @return the cell who has the another pair.
-     */
-    private Cell IsThisPairOnyTwiceInBox(Integer[] pair, Cell cell){
-        Cell candidate = null;
-        boolean onlyTwice = false;
-        find :
-        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
-            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
-                Cell temp = cells[i][j];
-                // We omit the main cell
-                if (temp != cell){
-                    // Is this a valid candidate? Asking for size skip default cells
-                    if (cell.GetPossibleValues().size() >= 3 && cell.HasPair(pair)){
-                        // We want to avoid use twice elimination with cells with literally the same possible values
-                        if (temp.GetPossibleValues().equals(cell.GetPossibleValues())){
-                            onlyTwice = false;
-                            break find;
-                        }
-                        if (candidate != null){
-                            onlyTwice = false;
-                            break find;
-                        }else{
-                            candidate = temp;
-                            onlyTwice = true;
-                        }
-                    }
-                }
-            }
-        }
-        if (onlyTwice){
-            return candidate;
-        }
-        return null;
-    }
-
-    /**
-     * Check if a pair of possible values only exist twice in a given row.
-     * @param pair the pair.
-     * @param row the row.
-     * @param cell the cell who has the pair.
-     * @return the other cell who has the pair.
-     */
-    private Cell IsThisPairOnlyTwiceInRow(Integer[] pair, int row, Cell cell){
-        Cell candidate = null;
-        boolean onlyTwice = false;
-        for (int j = 0; j < cells.length; j++){
-            // We omit the main cell
-            Cell temp = cells[row][j];
-            if (temp != cell){
-                // Is this a valid candidate? Asking for size skip default cells
-                if (cell.GetPossibleValues().size() >= 3 && cell.HasPair(pair)){
-                    // We want to avoid use twice elimination with cells with literally the same possible values
-                    if (temp.GetPossibleValues().equals(cell.GetPossibleValues())){
-                        onlyTwice = false;
-                        break;
-                    }
-                    if (candidate != null){
-                        onlyTwice = false;
-                        break;
-                    }else{
-                        candidate = temp;
-                        onlyTwice = true;
-                    }
-                }
-            }
-        }
-        if (onlyTwice){
-            return  candidate;
-        }
-        return  null;
-    }
-
-    /**
-     * Check if a pair of possible values only exist twice in a given column.
-     * @param pair the pair.
-     * @param column the column.
-     * @param cell the cell who has the pair.
-     * @return the other cell who has the pair.
-     */
-    private Cell IsThisPairOnlyTwiceInColumn(Integer[] pair, int column, Cell cell){
-        Cell candidate = null;
-        boolean onlyTwice = false;
-        for (int i = 0; i < cells.length; i++){
-            // We omit the main cell
-            Cell temp = cells[i][column];
-            if (temp != cell){
-                // Is this a valid candidate? Asking for size skip default cells
-                if (cell.GetPossibleValues().size() >= 3 && cell.HasPair(pair)){
-                    // We want to avoid use twice elimination with cells with literally the same possible values
-                    if (temp.GetPossibleValues().equals(cell.GetPossibleValues())){
-                        onlyTwice = false;
-                        break;
-                    }
-                    if (candidate != null){
-                        onlyTwice = false;
-                        break;
-                    }else{
-                        candidate = temp;
-                        onlyTwice = true;
-                    }
-                }
-            }
-        }
-        if (onlyTwice){
-            return  candidate;
-        }
-        return  null;
-    }
-
-    /**
-     * Check if a triplet of possible values only exist three times in the box
-     * @param triplet the triplet.
-     * @param cell the cell who has the triplet.
-     * @return the cell who has the another triplet.
-     */
-    private Cell IsThisTripletOnyThreeTimesInBox(Integer[] triplet, Cell cell){
-        Cell candidate = null;
-        boolean onlyThreeTimes = false;
-        find :
-        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
-            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
-                Cell temp = cells[i][j];
-                // We omit the main cell
-                if (temp != cell){
-                    // Is this a valid candidate? Asking for size skip default cells
-                    if (cell.GetPossibleValues().size() >= 4 && cell.HasTriplet(triplet)){
-                        // We want to avoid use triplets elimination with cells with literally the same possible values
-                        if (temp.GetPossibleValues().equals(cell.GetPossibleValues())){
-                            onlyThreeTimes = false;
-                            break find;
-                        }
-                        if (candidate != null){
-                            onlyThreeTimes = false;
-                            break find;
-                        }else{
-                            candidate = temp;
-                            onlyThreeTimes = true;
-                        }
-                    }
-                }
-            }
-        }
-        if (onlyThreeTimes){
-            return candidate;
-        }
-        return null;
-    }
-
-    /**
-     * Check if a pair of possible values only exist three times in a given row.
-     * @param triplet the triplet.
-     * @param row the row.
-     * @param cell the cell who has the triplet.
-     * @return the other cell who has the triplet.
-     */
-    private Cell IsThisTripletOnlyThreeTimesInRow(Integer[] triplet, int row, Cell cell){
-        Cell candidate = null;
-        boolean onlyThreeTimes = false;
-        for (int j = 0; j < cells.length; j++){
-            // We omit the main cell
-            Cell temp = cells[row][j];
-            if (temp != cell){
-                // Is this a valid candidate? Asking for size skip default cells
-                if (cell.GetPossibleValues().size() >= 3 && cell.HasTriplet(triplet)){
-                    // We want to avoid use triplet elimination with cells with literally the same possible values
-                    if (temp.GetPossibleValues().equals(cell.GetPossibleValues())){
-                        onlyThreeTimes = false;
-                        break;
-                    }
-                    if (candidate != null){
-                        onlyThreeTimes = false;
-                        break;
-                    }else{
-                        candidate = temp;
-                        onlyThreeTimes = true;
-                    }
-                }
-            }
-        }
-        if (onlyThreeTimes){
-            return  candidate;
-        }
-        return  null;
-    }
-
-    /**
-     * Check if a pair of possible values only exist three times in a given column.
-     * @param triplet the triplet.
-     * @param column the column.
-     * @param cell the cell who has the triplet.
-     * @return the other cell who has the triplet.
-     */
-    private Cell IsThisTripletOnlyThreeTimesInColumn(Integer[] triplet, int column, Cell cell){
-        Cell candidate = null;
-        boolean onlyThreeTimes = false;
-        for (int i = 0; i < cells.length; i++){
-            // We omit the main cell
-            Cell temp = cells[i][column];
-            if (temp != cell){
-                // Is this a valid candidate? Asking for size skip default cells
-                if (cell.GetPossibleValues().size() >= 3 && cell.HasTriplet(triplet)){
-                    // We want to avoid use triplet elimination with cells with literally the same possible values
-                    if (temp.GetPossibleValues().equals(cell.GetPossibleValues())){
-                        onlyThreeTimes = false;
-                        break;
-                    }
-                    if (candidate != null){
-                        onlyThreeTimes = false;
-                        break;
-                    }else{
-                        candidate = temp;
-                        onlyThreeTimes = true;
-                    }
-                }
-            }
-        }
-        if (onlyThreeTimes){
-            return  candidate;
-        }
-        return  null;
     }
 
     /**
@@ -554,17 +770,16 @@ public class Box {
      * Clean a value from a row in the box.
      * @param value the value.
      * @param row the row index.
-     * @param cellToSkipColumn the column of a cell that must be skipped.
+     * @param cell the cell with the value.
      * @return true if the value was removed from any of the cells.
      */
-    public boolean CleanPossibleValuesInRow(int value, int row, int cellToSkipColumn){
+    public boolean CleanPossibleValueInRow(int value, int row, Cell cell){
         boolean anyChange = false;
         // Loop through the row
         for (int j = 0; j < cells.length; j++){
-            // Check if we must skip the cell
-            if (j != cellToSkipColumn){
-                Cell cell = cells[row][j];
-                if (cell.RemovePossibleValue(value)){
+            Cell temp = cells[row][j];
+            if (temp != cell){
+                if (temp.RemovePossibleValue(value)){
                     anyChange = true;
                 }
             }
@@ -576,17 +791,16 @@ public class Box {
      * Clean a value from a column in the box.
      * @param value the value.
      * @param column the column index.
-     * @param cellToSkipRow the row of a cell that must be skipped.
+     * @param cell the cell with the value.
      * @return true if the value was removed from any of the cells.
      */
-    public boolean CleanPossibleValuesInColumn(int value, int column, int cellToSkipRow){
+    public boolean CleanPossibleValueInColumn(int value, int column, Cell cell){
         boolean anyChange = false;
         // Loop through the column
         for (int i = 0; i < cells.length; i++){
-            // Check if we must skip the cell
-            if (i != cellToSkipRow){
-                Cell cell = cells[i][column];
-                if(cell.RemovePossibleValue(value)){
+            Cell temp = cells[i][column];
+            if (temp != cell){
+                if(temp.RemovePossibleValue(value)){
                     anyChange = true;
                 }
             }
@@ -616,17 +830,17 @@ public class Box {
     /**
      * Clean a possible value from each cell int the box skipping a cell
      * @param value the value.
-     * @param toSkip the cell to skip.
+     * @param cell the cell to skip.
      * @return true if the value was removed from any of the cells.
      */
-    public boolean CleanPossibleValueInBox(int value, Cell toSkip){
+    public boolean CleanPossibleValueInBox(int value, Cell cell){
         boolean anyChange = false;
         // Loop through the cells inside the box
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
             for(int j = xFromTo[0]; j <= xFromTo[1]; j++){
-                Cell cell = cells[i][j];
-                if (cell != toSkip){
-                    if(cell.RemovePossibleValue(value)){
+                Cell temp = cells[i][j];
+                if (temp != cell){
+                    if(temp.RemovePossibleValue(value)){
                         anyChange = true;
                     }
                 }
@@ -676,4 +890,66 @@ public class Box {
         return anyChange;
     }
 
+    /**
+     * Get a clone of this box given a cells' matrix.
+     * @param cells the cells' matrix for the clone.
+     * @return the clone.
+     */
+    public Box GetClone(Cell[][] cells){
+        return new Box(cells, this.xFromTo[0], this.xFromTo[1], this.yFromTo[0], this.yFromTo[1]);
+    }
+
+    /**
+     * Print the cells of the sudoku from a box.
+     */
+    public void PrintCells(){
+        for (int i = 0; i < cells.length; i++){
+            List<List<Integer>> row = new ArrayList<>();
+            for (int j = 0; j < cells.length; j++){
+                row.add(cells[i][j].GetPossibleValues());
+            }
+            log.debug("{}", row);
+        }
+        log.debug("");
+    }
+
+    /**
+     * Print the cells of this box.
+     */
+    public void PrintBox(){
+        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            List<List<Integer>> row = new ArrayList<>();
+            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                row.add(cells[i][j].GetPossibleValues());
+            }
+            log.debug("{}", row);
+        }
+        log.debug("");
+    }
+
+    /**
+     * Print a row of cells.
+     * @param row the row.
+     */
+    public void PrintRow(int row){
+        List<List<Integer>> toPrint = new ArrayList<>();
+        for (int j = 0; j < cells.length; j++){
+            toPrint.add(cells[row][j].GetPossibleValues());
+        }
+        log.debug("{}", toPrint);
+        log.debug("");
+    }
+
+    /**
+     * Print a column of cells.
+     * @param column the column.
+     */
+    public void PrintColumn(int column){
+        List<List<Integer>> toPrint = new ArrayList<>();
+        for (int i = 0; i < cells.length; i++){
+            toPrint.add(cells[i][column].GetPossibleValues());
+        }
+        log.debug("{}", toPrint);
+        log.debug("");
+    }
 }
