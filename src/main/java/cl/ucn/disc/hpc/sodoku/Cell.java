@@ -15,8 +15,6 @@ public class Cell {
     private List<Integer> possibleValues;
     // True if the cell value comes by default
     private boolean isByDefault;
-    // A cell can be accessed by only one thread at a time
-    private boolean isLock;
 
     /**
      * The constructor of a cell
@@ -24,9 +22,7 @@ public class Cell {
     public Cell(){
         // Initialize the list
         this.possibleValues = new ArrayList<>();
-
         this.isByDefault = false;
-        this.isLock = false;
     }
 
     /**
@@ -36,9 +32,7 @@ public class Cell {
     public Cell(int value){
         // Initialize the list
         this.possibleValues = new ArrayList<>();
-
         this.isByDefault = true;
-        this.isLock = true;
 
         // Set the default value
         AddPossibleValue(value);
@@ -57,6 +51,8 @@ public class Cell {
             Collections.sort(possibleValues);
         }
     }
+
+
 
     /**
      * Remove a possible value.
@@ -86,34 +82,52 @@ public class Cell {
         if (isByDefault || possibleValues.size() == 1){
             return false;
         }
-        int removed = 0;
+        boolean anyRemoved = false;
         for (Integer value : values) {
             // Check if the value already exists
             int index = possibleValues.indexOf(value);
             if (index >= 0){
                 possibleValues.remove(index);
-                removed++;
+                anyRemoved = true;
             }
         }
-        return removed > 0;
+        return anyRemoved;
     }
 
     /**
      * Given a value remove all possible values except that one.
      * @param value the value to maintain.
      */
-    public void RemovePossibleValuesExceptOne(int value){
+    public boolean RemovePossibleValueExceptOne(int value){
+        if (possibleValues.size() == 1){
+            return false;
+        }
         possibleValues.clear();
         possibleValues.add(value);
+        return true;
     }
 
     /**
      * Given a pair remove all possible values except that pair.
      * @param pair the pair.
+     * @return true if any of the values was removed.
      */
-    public void RemovePossibleValuesExceptPair(Integer[] pair){
+    public boolean RemovePossibleValuesExceptPair(Integer[] pair){
         List<Integer> pairAsList = Arrays.asList(pair);
-        possibleValues.retainAll(pairAsList);
+        if (this.possibleValues.equals(pairAsList)){
+            return false;
+        }
+        return possibleValues.retainAll(pairAsList);
+    }
+
+    /**
+     * Remove a pair of values from the possible values.
+     * @param pair the pair.
+     * @return true if any of the value of the pair was removed.
+     */
+    public boolean RemovePairFromPossibleValues(Integer[] pair){
+        List<Integer> pairAsList = Arrays.asList(pair);
+        return possibleValues.removeAll(pairAsList);
     }
 
     /**
