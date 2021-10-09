@@ -173,27 +173,28 @@ public class Sodoku {
                 //log.debug("A change was made by loner rangers' elimination:");
                 continue;
             }/*
-            // If we use loner rangers elimination
-            if (LonerRangers()){
-                // We go back to the top of the loop
-                //log.debug("A change was made by loner rangers' elimination:");
-                continue;
-            }*/
-
             // If we use naked twins elimination
             if (NakedTwins()){
                 // We go back to the top of the loop
-                //log.debug("A change was made by twins elimination:");
+                log.debug("A change was made by naked twins elimination:");
                 continue;
-            }
+            }*/
             // If we use naked triplets elimination
             if (NakedTriplets()){
                 // We go back to the top of the loop
+                //log.debug("A change was made by naked triplets elimination:");
                 continue;
             }
             // If we use hidden twins elimination
             if (HiddenTwins()){
                 // We go back to the top of the loop
+                log.debug("A change was made by hidden twins elimination:");
+                continue;
+            }
+            // If we use hidden triplets elimination
+            if (HiddenTriplets()){
+                // We go back to the top of the loop
+                log.debug("A change was made by hidden triplets elimination:");
                 continue;
             }
             // If we cannot make any change we solve the sudoku by brute force
@@ -295,12 +296,33 @@ public class Sodoku {
         return anyChange;
     }
 
+    /**
+     * Hidden twins technique for each box in the sudoku.
+     * @return true if any change was made.
+     */
     private boolean HiddenTwins(){
         // Loop through the boxes
         for (int i = 0; i < boxes.length; i++){
             for (int j = 0; j < boxes.length; j++){
                 Box box = boxes[i][j];
                 if (box.HiddenTwins()){
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Hidden triplets' technique for each box in the sudoku.
+     * @return true if any change was made.
+     */
+    private boolean HiddenTriplets(){
+        // Loop through the boxes
+        for (int i = 0; i < boxes.length; i++){
+            for (int j = 0; j < boxes.length; j++){
+                Box box = boxes[i][j];
+                if (box.HiddenTriplets()){
                     return true;
                 }
             }
