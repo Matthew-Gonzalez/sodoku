@@ -104,7 +104,7 @@ public class Box {
     }
 
     /**
-     * Cleans the box using simple elimination technique.
+     * Reduce possible values from cells using simple elimination technique.
      * @return true if any change was made.
      */
     public boolean SimpleElimination(){
@@ -141,8 +141,8 @@ public class Box {
     }
 
     /**
-     * Clean the box using loner rangers technique.
-     * @return true if a change was made.
+     * Reduce possible values from cells using loner rangers technique.
+     * @return true if any change was made.
      */
     public boolean LonerRangers(){
         boolean anyChange = false;
@@ -164,7 +164,7 @@ public class Box {
     }
 
     /**
-     * Clean the box using twins technique.
+     * Reduce possible values from cells using naked twins technique.
      * @return true if any change was made.
      */
     public boolean NakedTwins(){
@@ -190,6 +190,10 @@ public class Box {
         return anyChange;
     }
 
+    /**
+     * Reduce possible values from cells using naked triplets technique.
+     * @return true if any change was made.
+     */
     public boolean NakedTriplets(){
         boolean anyChange = false;
         // Loop through the box cells
@@ -213,6 +217,10 @@ public class Box {
         return anyChange;
     }
 
+    /**
+     * Reduce possible values from cells using hidden twins technique.
+     * @return true if any change was made.
+     */
     public boolean HiddenTwins(){
         for(int i = yFromTo[0]; i <= yFromTo[1]; i++){
             for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
@@ -228,6 +236,34 @@ public class Box {
                             return true;
                         }
                         if (TryToHiddenTwinsInColumn(cell, pairs.get(k), j)){
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Reduce possible values from cells using hidden triplets technique.
+     * @return true if any change was made.
+     */
+    public boolean HiddenTriplets(){
+        for(int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                // We are looking for a not default cell with two or more possible values
+                Cell cell = cells[i][j];
+                if (cell.GetPossibleValues().size() >= 3){
+                    List<Integer[]> trios = cell.GetUniqueTrios();
+                    for (int k = 0; k < trios.size(); k++){
+                        if (TryToHiddenTripletsInBox(cell, trios.get(k))){
+                            return true;
+                        }
+                        if (TryToHiddenTripletsInRow(cell, trios.get(k), i)){
+                            return true;
+                        }
+                        if (TryToHiddenTripletsInColumn(cell, trios.get(k), j)){
                             return true;
                         }
                     }
@@ -266,21 +302,11 @@ public class Box {
         }
         // If twins
         if (twin_2 != null){
-            //log.debug("Twins in row: {} | {}", twin_1.GetPossibleValues(), twin_2.GetPossibleValues());
             // Remove twins values from other cells
             while(!toClean.empty()){
-                Cell beCleaned = toClean.pop();
-                //log.debug("To clean: {}", beCleaned.GetPossibleValues());
-                if (beCleaned.RemovePossibleValues(twin_1.GetPossibleValues())){
-                    //log.debug("     Result: {}", beCleaned.GetPossibleValues());
+                if (toClean.pop().RemovePossibleValues(twin_1.GetPossibleValues())){
                     anyChange = true;
                 }
-            }
-            if (anyChange){
-                //log.debug("Result:");
-                //PrintCells();
-            }else{
-                //log.debug("Result: no changes");
             }
         }
         return anyChange;
@@ -314,21 +340,11 @@ public class Box {
         }
         // If twins
         if (twin_2 != null){
-            //log.debug("Twins in row: {} | {}", twin_1.GetPossibleValues(), twin_2.GetPossibleValues());
             // Remove twins values from other cells
             while(!toClean.empty()){
-                Cell beCleaned = toClean.pop();
-                //log.debug("To clean: {}", beCleaned.GetPossibleValues());
-                if (beCleaned.RemovePossibleValues(twin_1.GetPossibleValues())){
-                    //log.debug("     Result: {}", beCleaned.GetPossibleValues());
+                if (toClean.pop().RemovePossibleValues(twin_1.GetPossibleValues())){
                     anyChange = true;
                 }
-            }
-            if (anyChange){
-                //log.debug("Result:");
-                //PrintCells();
-            }else{
-                //log.debug("Result: no changes");
             }
         }
         return anyChange;
@@ -362,21 +378,11 @@ public class Box {
         }
         // If twins
         if (twin_2 != null){
-            //log.debug("Twins in row: {} | {}", twin_1.GetPossibleValues(), twin_2.GetPossibleValues());
             // Remove twins values from other cells
             while(!toClean.empty()){
-                Cell beCleaned = toClean.pop();
-                //log.debug("To clean: {}", beCleaned.GetPossibleValues());
-                if (beCleaned.RemovePossibleValues(twin_1.GetPossibleValues())){
-                    //log.debug("     Result: {}", beCleaned.GetPossibleValues());
+                if (toClean.pop().RemovePossibleValues(twin_1.GetPossibleValues())){
                     anyChange = true;
                 }
-            }
-            if (anyChange){
-                //log.debug("Result:");
-                //PrintCells();
-            }else{
-                //log.debug("Result: no changes");
             }
         }
         return anyChange;
@@ -415,21 +421,11 @@ public class Box {
         }
         // If triplets
         if (triplet_2 != null && triplet_3 != null){
-            //log.debug("Triplet in box: {} | {} | {}", triplet_1.GetPossibleValues(), triplet_2.GetPossibleValues(), triplet_3.GetFirstPossibleValue());
             // Remove twins values from other cells
             while(!toClean.empty()){
-                Cell beCleaned = toClean.pop();
-                //log.debug("To clean: {}", beCleaned.GetPossibleValues());
-                if (beCleaned.RemovePossibleValues(triplet_1.GetPossibleValues())){
-                    //log.debug("     Result: {}", beCleaned.GetPossibleValues());
+                if (toClean.pop().RemovePossibleValues(triplet_1.GetPossibleValues())){
                     anyChange = true;
                 }
-            }
-            if (anyChange){
-                //log.debug("Result:");
-                //PrintCells();
-            }else{
-                //log.debug("Result: no changes");
             }
         }
         return anyChange;
@@ -467,21 +463,11 @@ public class Box {
         }
         // If triplets
         if (triplet_2 != null && triplet_3 != null){
-            //log.debug("Triplet in box: {} | {} | {}", triplet_1.GetPossibleValues(), triplet_2.GetPossibleValues(), triplet_3.GetFirstPossibleValue());
             // Remove twins values from other cells
             while(!toClean.empty()){
-                Cell beCleaned = toClean.pop();
-                //log.debug("To clean: {}", beCleaned.GetPossibleValues());
-                if (beCleaned.RemovePossibleValues(triplet_1.GetPossibleValues())){
-                    //log.debug("     Result: {}", beCleaned.GetPossibleValues());
+                if (toClean.pop().RemovePossibleValues(triplet_1.GetPossibleValues())){
                     anyChange = true;
                 }
-            }
-            if (anyChange){
-                //log.debug("Result:");
-                //PrintCells();
-            }else{
-                //log.debug("Result: no changes");
             }
         }
         return anyChange;
@@ -519,21 +505,11 @@ public class Box {
         }
         // If triplets
         if (triplet_2 != null && triplet_3 != null){
-            //log.debug("Triplet in box: {} | {} | {}", triplet_1.GetPossibleValues(), triplet_2.GetPossibleValues(), triplet_3.GetFirstPossibleValue());
             // Remove twins values from other cells
             while(!toClean.empty()){
-                Cell beCleaned = toClean.pop();
-                //log.debug("To clean: {}", beCleaned.GetPossibleValues());
-                if (beCleaned.RemovePossibleValues(triplet_1.GetPossibleValues())){
-                    //log.debug("     Result: {}", beCleaned.GetPossibleValues());
+                if (toClean.pop().RemovePossibleValues(triplet_1.GetPossibleValues())){
                     anyChange = true;
                 }
-            }
-            if (anyChange){
-                //log.debug("Result:");
-                //PrintCells();
-            }else{
-                //log.debug("Result: no changes");
             }
         }
         return anyChange;
@@ -575,17 +551,12 @@ public class Box {
         }
         // If twins we clean the other values from these cells
         if (twin_2 != null){
-            log.debug("Trying to twins in box with pair: [{},{}]", pair[0], pair[1]);
-            PrintBox();
-            log.debug("Twins: {} | {}", twin_1.GetFirstPossibleValue(), twin_2.GetPossibleValues());
             if (twin_1.RemovePossibleValuesExceptPair(pair)){
                 anyChange = true;
             }
             if (twin_2.RemovePossibleValuesExceptPair(pair)){
                 anyChange = true;
             }
-            log.debug("Result");
-            PrintBox();
         }
         return anyChange;
     }
@@ -598,12 +569,10 @@ public class Box {
      * @return true if any change was made.
      */
     private boolean TryToHiddenTwinsInRow(Cell twin_1, Integer[] pair, int row){
-        log.debug("Trying to twins in row with pair: [{},{}]", pair[0], pair[1]);
-        PrintRow(row);
         boolean anyChange = false;
         Cell twin_2 = null;
         // Loop through the row
-        for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+        for (int j = 0; j < cells.length; j++){
             Cell temp = cells[row][j];
             // We skip twin_1 cell
             if (temp != twin_1){
@@ -627,15 +596,12 @@ public class Box {
         }
         // If twins we clean the other values from these cells
         if (twin_2 != null){
-            log.debug("Twins: {} | {}", twin_1.GetFirstPossibleValue(), twin_2.GetPossibleValues());
             if (twin_1.RemovePossibleValuesExceptPair(pair)){
                 anyChange = true;
             }
             if (twin_2.RemovePossibleValuesExceptPair(pair)){
                 anyChange = true;
             }
-            log.debug("Result");
-            PrintRow(row);
         }
         return anyChange;
     }
@@ -648,12 +614,10 @@ public class Box {
      * @return true if any change was made.
      */
     private boolean TryToHiddenTwinsInColumn(Cell twin_1, Integer[] pair, int column){
-        log.debug("Trying to twins in column with pair: [{},{}]", pair[0], pair[1]);
-        PrintColumn(column);
         boolean anyChange = false;
         Cell twin_2 = null;
         // Loop through the column
-        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
+        for (int i = 0; i < cells.length; i++){
             Cell temp = cells[i][column];
             // We skip twin_1 cell
             if (temp != twin_1){
@@ -677,15 +641,169 @@ public class Box {
         }
         // If twins we clean the other values from these cells
         if (twin_2 != null){
-            log.debug("Twins: {} | {}", twin_1.GetFirstPossibleValue(), twin_2.GetPossibleValues());
             if (twin_1.RemovePossibleValuesExceptPair(pair)){
                 anyChange = true;
             }
             if (twin_2.RemovePossibleValuesExceptPair(pair)){
                 anyChange = true;
             }
-            log.debug("Result");
-            PrintColumn(column);
+        }
+        return anyChange;
+    }
+
+    /**
+     * Try to use hidden twins technique in box.
+     * @param triplet_1 the triplet.
+     * @param trio the trio.
+     * @return true if any change was made.
+     */
+    private boolean TryToHiddenTripletsInBox(Cell triplet_1, Integer[] trio){
+        boolean anyChange = false;
+        Cell triplet_2 = null;
+        Cell triplet_3 = null;
+        // Loop through the box cells
+        for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                Cell temp = cells[i][j];
+                // We skip twin_1 cell
+                if (temp != triplet_1){
+                    // Is this a valid triplet?
+                    if (temp.HasTrio(trio)){
+                        if (triplet_2 == null){
+                            triplet_2 = temp;
+                        }else if (triplet_3 == null){
+                            triplet_3 = temp;
+                        }else{
+                            // There are more than three cells with the trio
+                            return false;
+                        }
+                    }
+                    // If the cell is not a triplet but has any of the trio values, we cannot use triplets
+                    if (temp.HasPossibleValue(trio[0]) || temp.HasPossibleValue(trio[1]) || temp.HasPossibleValue(trio[2])){
+                        if (temp.HasOnlyOnePossibleValue()){
+                            log.error("Cell with single value is not unique in the box after use twins | value: {} | axis: [{},{}]", temp.GetFirstPossibleValue(), i, j);
+                            PrintCells();
+                        }
+                        return false;
+                    }
+                }
+            }
+        }
+        // If triplets we clean the other values from these cells
+        if (triplet_2 != null && triplet_3 != null){
+            if (triplet_1.RemovePossibleValuesExceptTrio(trio)){
+                anyChange = true;
+            }
+            if (triplet_2.RemovePossibleValuesExceptTrio(trio)){
+                anyChange = true;
+            }
+            if (triplet_3.RemovePossibleValuesExceptTrio(trio)){
+                anyChange = true;
+            }
+        }
+        return anyChange;
+    }
+
+    /**
+     * Try to use hidden twins technique in row.
+     * @param triplet_1 the triplet.
+     * @param trio the trio.
+     * @param row the row.
+     * @return true if any change was made.
+     */
+    private boolean TryToHiddenTripletsInRow(Cell triplet_1, Integer[] trio, int row){
+        boolean anyChange = false;
+        Cell triplet_2 = null;
+        Cell triplet_3 = null;
+        // Loop through the box cells
+        for (int j = 0; j < cells.length; j++){
+            Cell temp = cells[row][j];
+            // We skip twin_1 cell
+            if (temp != triplet_1){
+                // Is this a valid triplet?
+                if (temp.HasTrio(trio)){
+                    if (triplet_2 == null){
+                        triplet_2 = temp;
+                    }else if (triplet_3 == null){
+                        triplet_3 = temp;
+                    }else{
+                        // There are more than three cells with the trio
+                        return false;
+                    }
+                }
+                // If the cell is not a triplet but has any of the trio values, we cannot use triplets
+                if (temp.HasPossibleValue(trio[0]) || temp.HasPossibleValue(trio[1]) || temp.HasPossibleValue(trio[2])){
+                    if (temp.HasOnlyOnePossibleValue()){
+                        log.error("Cell with single value is not unique in the box after use twins | value: {} | axis: [{},{}]", temp.GetFirstPossibleValue(), row, j);
+                        PrintCells();
+                    }
+                    return false;
+                }
+            }
+        }
+        // If triplets we clean the other values from these cells
+        if (triplet_2 != null && triplet_3 != null){
+            if (triplet_1.RemovePossibleValuesExceptTrio(trio)){
+                anyChange = true;
+            }
+            if (triplet_2.RemovePossibleValuesExceptTrio(trio)){
+                anyChange = true;
+            }
+            if (triplet_3.RemovePossibleValuesExceptTrio(trio)){
+                anyChange = true;
+            }
+        }
+        return anyChange;
+    }
+
+    /**
+     * Try to use hidden twins technique in column.
+     * @param triplet_1 the triplet.
+     * @param trio the trio.
+     * @param column the column.
+     * @return true if any change was made.
+     */
+    private boolean TryToHiddenTripletsInColumn(Cell triplet_1, Integer[] trio, int column){
+        boolean anyChange = false;
+        Cell triplet_2 = null;
+        Cell triplet_3 = null;
+        // Loop through the box cells
+        for (int i = 0; i < cells.length; i++){
+            Cell temp = cells[i][column];
+            // We skip twin_1 cell
+            if (temp != triplet_1){
+                // Is this a valid triplet?
+                if (temp.HasTrio(trio)){
+                    if (triplet_2 == null){
+                        triplet_2 = temp;
+                    }else if (triplet_3 == null){
+                        triplet_3 = temp;
+                    }else{
+                        // There are more than three cells with the trio
+                        return false;
+                    }
+                }
+                // If the cell is not a triplet but has any of the trio values, we cannot use triplets
+                if (temp.HasPossibleValue(trio[0]) || temp.HasPossibleValue(trio[1]) || temp.HasPossibleValue(trio[2])){
+                    if (temp.HasOnlyOnePossibleValue()){
+                        log.error("Cell with single value is not unique in the box after use twins | value: {} | axis: [{},{}]", temp.GetFirstPossibleValue(), i, column);
+                        PrintCells();
+                    }
+                    return false;
+                }
+            }
+        }
+        // If triplets we clean the other values from these cells
+        if (triplet_2 != null && triplet_3 != null){
+            if (triplet_1.RemovePossibleValuesExceptTrio(trio)){
+                anyChange = true;
+            }
+            if (triplet_2.RemovePossibleValuesExceptTrio(trio)){
+                anyChange = true;
+            }
+            if (triplet_3.RemovePossibleValuesExceptTrio(trio)){
+                anyChange = true;
+            }
         }
         return anyChange;
     }
