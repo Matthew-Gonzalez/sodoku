@@ -88,13 +88,13 @@ public class Main {
         mainSudoku.PrintCells();
         log.debug("Trying to solve using brutal force..." + "\n");
 
-        /*
+
         // If reduction did not solve the sudoku we have to use brutal force
         if (SolveSudokuByBruteForce(mainSudoku)){
             long time = stopWatch.getTime(TimeUnit.MILLISECONDS);
             log.debug("Sudoku was solved using brutal force in {} ms", time);
             return;
-        }*/
+        }
 
         long time = stopWatch.getTime(TimeUnit.MILLISECONDS);
         log.debug("Brutal force was not enough to solve: " + "\n");
@@ -137,7 +137,8 @@ public class Main {
     }
 
     /**
-     * Given a sudoku find all the cells with N >= possible values, then for each one create and store a new sudoku to try
+     * Given a sudoku find the first cell with possible values, then for each value create a clone of the sudoku
+     * and try to solve it.
      * @param sudoku the sudoku.
      * @param toTry the stack where we are going to store the possible sudoku solutions.
      */
@@ -149,6 +150,7 @@ public class Main {
                     for (int k = 0; k < cell.GetPossibleValues().size(); k++){
                         CreateCloneAndStoreSudoku(cell.GetPossibleValues().get(k), i, j, sudoku, toTry);
                     }
+                    return;
                 }
             }
         }
@@ -163,17 +165,11 @@ public class Main {
      * @param toTry the stack.
      */
     public static void CreateCloneAndStoreSudoku(int value, int cellToChangeRow, int cellToChangeColumn, Sodoku sudoku, Stack<Sodoku> toTry){
-        log.debug("Original:");
-        sudoku.PrintCells();
         // Creates a clone of the sudoku
         Sodoku clone = (Sodoku) sudoku.GetClone();
         // Get the cell and change it value
         Cell cell = clone.GetCell(cellToChangeRow, cellToChangeColumn);
-        log.debug("Cell: {} | new value: {}", cell.GetPossibleValues(), value);
         cell.RemovePossibleValueExceptOne(value);
-        log.debug("Cell before: {}", cell.GetPossibleValues());
-        log.debug("Copy:");
-        clone.PrintCells();
         // Stores the cell in the stack
         toTry.push(clone);
     }
@@ -185,30 +181,12 @@ public class Main {
      * @return the sudoku if it was solved.
      */
     public static Sodoku TryToSolveSudoku(Sodoku sudoku, Stack<Sodoku> toTry){
-        //log.debug("Try to solve: " + "\n");
-        //sudoku.PrintCells();
         // Use reduction to try to solve the sudoku
-        /*
         if (sudoku.Solve()){
             return sudoku;
         }
-        // If not we repeat the process and look for all the new possibilities to try
-        for (int i = 0; i < sudoku.GetCells().length; i++){
-            for (int j = 0; j < sudoku.GetCells().length; j++){
-                Cell cell = sudoku.GetCells()[i][j];
-                if (!cell.HasOnlyOnePossibleValue()){
-                    for (int k = 0; k < cell.GetPossibleValues().size(); k++){
-                        // Creates a clone of the sudoku
-                        Sodoku clone = (Sodoku) sudoku.GetClone();
-                        // Get the cell and change it value
-                        Cell a = clone.GetCell(i, j);
-                        a.RemovePossibleValuesExceptOne(cell.GetPossibleValues().get(k));
-                        // Stores the cell in the stack
-                        toTry.push(clone);
-                    }
-                }
-            }
-        }*/
+        // If not, find a new cell with possible values
+        GetAndStorePossibilities(sudoku, toTry);
         return null;
     }
 }
