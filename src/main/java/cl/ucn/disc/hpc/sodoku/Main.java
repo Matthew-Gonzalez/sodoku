@@ -14,18 +14,25 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class Main {
-    // The path of the text file from which we will get our sudoku
-    private final String PATH = "src/main/resources/sodoku.txt";
+    // The paths of the text files from which we will get our sudoku
+    private final static String NINE_EASY_PATH = "src/main/resources/nine_easy.txt";
+    private final static String NINE_NORMAL_PATH = "src/main/resources/nine_normal.txt";
+    private final static String NINE_HARD_PATH = "src/main/resources/nine_hard.txt";
+    private final static String NINE_VERY_HARD_PATH = "src/main/resources/nine_very_hard.txt";
+    private final static String SIXTEEN_NORMAL_PATH = "src/main/resources/sixteen_normal.txt";
+    private final static String SIXTEEN_VERY_HARD_PATH = "src/main/resources/sixteen_very_hard.txt";
+
+    // Cores to solve the sudoku using parallelism
+    private final static int cores = 4;
 
     /**
      * Main program method.
      * @param args args.
      */
     public static void main(String[] args) {
-        final int cores = 4;
 
         // Try to solve the sudoku
-        SolveSudoku(cores);
+        SolveSudoku(cores, NINE_NORMAL_PATH);
     }
 
     public static Sodoku SudokuFromTextFile(String path) {
@@ -60,10 +67,11 @@ public class Main {
     /**
      * Try to solve a sudoku.
      * @param cores how many cores will be used by brutal force.
+     * @param path the path of the .txt file with the sudoku.
      */
-    private static void SolveSudoku(int cores){
+    private static void SolveSudoku(final int cores, String path){
         // Build a sudoku from a text file
-        Sodoku mainSudoku = SudokuFromTextFile("src/main/resources/sodoku.txt");
+        Sodoku mainSudoku = SudokuFromTextFile(path);
         // Did it find the text file?
         if (mainSudoku == null){
             return;
