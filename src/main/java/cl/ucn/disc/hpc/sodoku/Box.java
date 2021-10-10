@@ -380,6 +380,72 @@ public class Box {
     }
 
     /**
+     * Reduce possible values from box cells using hidden twins technique.
+     * @return true if any change was made.
+     */
+    public boolean HiddenTwinsBox(){
+        for(int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                // We are looking for a not default cell with two or more possible values
+                Cell cell = cells[i][j];
+                if (cell.GetPossibleValues().size() >= 2){
+                    List<Integer[]> pairs = cell.GetUniquePairs();
+                    for (int k = 0; k < pairs.size(); k++){
+                        if (TryToHiddenTwinsInBox(cell, pairs.get(k))){
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Reduce possible values from rows cells using hidden twins technique.
+     * @return true if any change was made.
+     */
+    public boolean HiddenTwinsRows(){
+        for(int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = 0; j < cells.length; j++){
+                // We are looking for a not default cell with two or more possible values
+                Cell cell = cells[i][j];
+                if (cell.GetPossibleValues().size() >= 2){
+                    List<Integer[]> pairs = cell.GetUniquePairs();
+                    for (int k = 0; k < pairs.size(); k++){
+                        if (TryToHiddenTwinsInRow(cell, pairs.get(k), i)){
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Reduce possible values from columns cells using hidden twins technique.
+     * @return true if any change was made.
+     */
+    public boolean HiddenTwinsColumns(){
+        for(int j = xFromTo[0]; j <= xFromTo[1]; j++){
+            for (int i = 0; i < cells.length; j++){
+                // We are looking for a not default cell with two or more possible values
+                Cell cell = cells[i][j];
+                if (cell.GetPossibleValues().size() >= 2){
+                    List<Integer[]> pairs = cell.GetUniquePairs();
+                    for (int k = 0; k < pairs.size(); k++){
+                        if (TryToHiddenTwinsInColumn(cell, pairs.get(k), j)){
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
      * Reduce possible values from cells using hidden triplets technique.
      * @return true if any change was made.
      */
