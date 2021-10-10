@@ -34,8 +34,8 @@ public class Box {
     }
 
     /**
-     * Check if this is a valid box
-     * @return true if the box is valid
+     * Check if this is a valid box.
+     * @return true if the box is valid.
      */
     public boolean IsThisBoxValid(){
         List<Integer> values = new ArrayList<>();
@@ -59,6 +59,10 @@ public class Box {
         return true;
     }
 
+    /**
+     * Check if the rows of the box are valid.
+     * @return true if the rows are valid.
+     */
     public boolean AreTheBoxRowsValid(){
         // Loop through the cells
         for (int i = yFromTo[0]; i <= yFromTo[1]; i++){
@@ -81,6 +85,10 @@ public class Box {
         return true;
     }
 
+    /**
+     * Check if the columns of the box are valid.
+     * @return true if the rows are valid.
+     */
     public boolean AreTheBoxColumnsValid(){
         // Loop through the cells
         for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
@@ -181,6 +189,69 @@ public class Box {
                     if (TryToNakedTwinsInRow(cell, i)){
                         return true;
                     }
+                    if (TryToNakedTwinsInColumn(cell, j)){
+                        return true;
+                    }
+                }
+            }
+        }
+        return anyChange;
+    }
+
+    /**
+     * Reduce possible values from box cells using naked twins technique.
+     * @return true if any change was made.
+     */
+    public boolean NakedTwinsBox(){
+        boolean anyChange = false;
+        // Loop through the box cells
+        for(int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                // We are looking for a not default cell with two possible values
+                Cell cell = cells[i][j];
+                if (cell.GetPossibleValues().size() == 2){
+                    if (TryToNakedTwinsInBox(cell)){
+                        return true;
+                    }
+                }
+            }
+        }
+        return anyChange;
+    }
+
+    /**
+     * Reduce possible values from row cells using naked twins technique.
+     * @return true if any change was made.
+     */
+    public boolean NakedTwinsRows(){
+        boolean anyChange = false;
+        // Loop through the box cells
+        for(int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = 0; j < cells.length; j++){
+                // We are looking for a not default cell with two possible values
+                Cell cell = cells[i][j];
+                if (cell.GetPossibleValues().size() == 2){
+                    if (TryToNakedTwinsInRow(cell, i)){
+                        return true;
+                    }
+                }
+            }
+        }
+        return anyChange;
+    }
+
+    /**
+     * Reduce possible values from columns cells using naked twins technique.
+     * @return true if any change was made.
+     */
+    public boolean NakedTwinsColumns(){
+        boolean anyChange = false;
+        // Loop through the box cells
+        for(int j = xFromTo[0]; j <= xFromTo[1]; j++){
+            for (int i = 0; i < cells.length; i++){
+                // We are looking for a not default cell with two possible values
+                Cell cell = cells[i][j];
+                if (cell.GetPossibleValues().size() == 2){
                     if (TryToNakedTwinsInColumn(cell, j)){
                         return true;
                     }
