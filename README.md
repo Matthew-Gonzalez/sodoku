@@ -6,7 +6,9 @@ Paralell Sodoku Solver developed in HPC-2021-2
 ## The solver
 The sudoku solver is developed in Java trying to be the most readable possible for anyone who want use this code.
 
-## How does it works?
+&nbsp;
+
+## How does it work?
 The solver tries to solve the sudoku by following these two steps:
 
 1. Reduce: Try to remove as many values as possible from each cell using humanistic techniques like naked twins, hidden triplets, etc.
