@@ -289,6 +289,69 @@ public class Box {
     }
 
     /**
+     * Reduce possible values from box cells using naked triplets technique.
+     * @return true if any change was made.
+     */
+    public boolean NakedTripletsBox(){
+        boolean anyChange = false;
+        // Loop through the box cells
+        for(int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = xFromTo[0]; j <= xFromTo[1]; j++){
+                // We are looking for a not default cell with three possible values
+                Cell cell = cells[i][j];
+                if (cell.GetPossibleValues().size() == 3){
+                    if (TryToNakedTripletsInBox(cell)){
+                        return true;
+                    }
+                }
+            }
+        }
+        return anyChange;
+    }
+
+    /**
+     * Reduce possible values from rows cells using naked triplets technique.
+     * @return true if any change was made.
+     */
+    public boolean NakedTripletsRows(){
+        boolean anyChange = false;
+        // Loop through the box cells
+        for(int i = yFromTo[0]; i <= yFromTo[1]; i++){
+            for (int j = 0; j < cells.length; j++){
+                // We are looking for a not default cell with three possible values
+                Cell cell = cells[i][j];
+                if (cell.GetPossibleValues().size() == 3){
+                    if (TryToNakedTripletsInRow(cell, i)){
+                        return true;
+                    }
+                }
+            }
+        }
+        return anyChange;
+    }
+
+    /**
+     * Reduce possible values from columns cells using naked triplets technique.
+     * @return true if any change was made.
+     */
+    public boolean NakedTripletsColumns(){
+        boolean anyChange = false;
+        // Loop through the box cells
+        for(int j = xFromTo[0]; j <= xFromTo[1]; j++){
+            for (int i = 0; i < cells.length; i++){
+                // We are looking for a not default cell with three possible values
+                Cell cell = cells[i][j];
+                if (cell.GetPossibleValues().size() == 3){
+                    if (TryToNakedTripletsInColumn(cell, j)){
+                        return true;
+                    }
+                }
+            }
+        }
+        return anyChange;
+    }
+
+    /**
      * Reduce possible values from cells using hidden twins technique.
      * @return true if any change was made.
      */
