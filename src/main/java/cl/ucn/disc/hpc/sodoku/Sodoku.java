@@ -407,6 +407,7 @@ public class Sodoku {
                         });
                     }
                 } catch (RejectedExecutionException e){
+                    // Another thread invalidates the sudoku already
                     break exit;
                 }
             }
