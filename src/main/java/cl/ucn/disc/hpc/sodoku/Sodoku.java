@@ -143,7 +143,7 @@ public class Sodoku {
      * Try to solve the sudoku
      * @return true if the sudoku was solved
      */
-    public boolean Solve(){
+    public boolean TryToSolve(){
         return ReducePossibleValues();
     }
 
@@ -152,71 +152,57 @@ public class Sodoku {
      * @return true if the sudoku was solved.
      */
     private boolean ReducePossibleValues(){
-        int loops = -1;
         while(true){
-            loops++;
-            //PrintCells();
             // Is the sudoku solved?
-            if (IsTheSodokuSolved()) {
-                //log.debug("Loops required to solve only reducing: {}", loops);
+            if (IsTheSudokuSolved()) {
                 return true;
             }
             // If we use simple elimination
             if (SimpleElimination()){
                 // We go back to the top of the loop
-                //log.debug("A change was made by simple elimination:");
                 continue;
             }
             // If we use loner rangers elimination
             if (LonerRangers()){
                 // We go back to the top of the loop
-                //log.debug("A change was made by loner rangers' elimination:");
                 continue;
-            }/*
+            }
             // If we use naked twins elimination
             if (NakedTwins()){
                 // We go back to the top of the loop
-                log.debug("A change was made by naked twins elimination:");
                 continue;
-            }*/
+            }
             // If we use naked triplets elimination
             if (NakedTriplets()){
                 // We go back to the top of the loop
-                //log.debug("A change was made by naked triplets elimination:");
                 continue;
             }
             // If we use hidden twins elimination
             if (HiddenTwins()){
                 // We go back to the top of the loop
-                log.debug("A change was made by hidden twins elimination:");
                 continue;
             }
             // If we use hidden triplets elimination
             if (HiddenTriplets()){
                 // We go back to the top of the loop
-                log.debug("A change was made by hidden triplets elimination:");
                 continue;
             }
             // If we cannot make any change we solve the sudoku by brute force
             break;
         }
-        //log.debug("Loops until reducing fails: {}", loops);
         return  false;
     }
 
     /**
-     * Parallel check if the sodoku is solved.
-     * @return true if the sodoku is solved.
+     * Check if the sudoku is solved.
+     * @return true if the sudoku is solved.
      */
-    public boolean IsTheSodokuSolved() {
+    private boolean IsTheSudokuSolved() {
         // Loop through the boxes
         for (int i = 0; i < boxes.length; i++) {
             for (int j = 0; j < boxes.length; j++) {
                 Box box = boxes[i][j];
-                boolean isThisBoxValid = box.IsThisBoxValid();
-                boolean areTheBoxRowsValid = box.AreTheBoxRowsValid();
-                boolean areTheBoxColumnsValid = box.AreTheBoxColumnsValid();
-                if (!isThisBoxValid || !areTheBoxRowsValid || !areTheBoxColumnsValid) {
+                if (!box.IsThisBoxValid() || !box.AreTheBoxRowsValid()|| !box.AreTheBoxColumnsValid()) {
                     return false;
                 }
             }

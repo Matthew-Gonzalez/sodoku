@@ -117,7 +117,7 @@ public class Main {
      * @return true if the sudoku was solved.
      */
     private static boolean SolveSudokuByReductions(Sodoku sudoku){
-        return sudoku.Solve();
+        return sudoku.TryToSolve();
     }
 
     /**
@@ -190,7 +190,7 @@ public class Main {
      */
     public static Sodoku TryToSolveSudoku(Sodoku sudoku, Stack<Sodoku> toTry){
         // Use reduction to try to solve the sudoku
-        if (sudoku.Solve()){
+        if (sudoku.TryToSolve()){
             return sudoku;
         }
         // If not, find a new cell with possible values
