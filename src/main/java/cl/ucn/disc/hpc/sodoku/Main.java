@@ -31,14 +31,14 @@ public class Main {
      */
     public static void main(String[] args) {
         // Number of cores
-        int cores = 5;
+        int cores = 1;
         int attempts = 40;
 
         log.debug("Start program...");
         log.debug("Cores: {}", cores);
         log.debug("");
 
-        Sodoku sodoku = SudokuFromTextFile(SIXTEEN_NORMAL_PATH);
+        Sodoku sodoku = SudokuFromTextFile(NINE_NORMAL_PATH);
         if (sodoku == null){
             return;
         }
@@ -144,7 +144,7 @@ public class Main {
         StopWatch stopWatch = StopWatch.createStarted();
 
         // Reduction depends on only one thread
-        if (SolveSudokuByBruteForce(sudoku)){
+        if (SolveSudokuByReductions(sudoku)){
             stopWatch.stop();
             long timeToComplete = stopWatch.getTime(TimeUnit.MILLISECONDS);
             //sudoku.PrintCells();
